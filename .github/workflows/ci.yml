@@ -16,4 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npm test
+      - name: Run tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=512
+        run: node --test-timeout=60000 --test test/*.test.js
