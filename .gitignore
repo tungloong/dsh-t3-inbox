@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.backup
+*.bak
+*.tgz
+*.log
+.env*
+_*.cjs
+_*.mjs

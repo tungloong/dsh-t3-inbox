@@ -1,0 +1,95 @@
+{
+  "name": "dsh-t3-inbox",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "T3-inspired attention-first inbox sidebar for DeepSeek Harness (independent community plugin, not affiliated with Ping Labs or DeepSeek).",
+  "license": "MIT",
+  "author": {
+    "name": "tungloong",
+    "url": "https://github.com/tungloong"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tungloong/dsh-t3-inbox.git"
+  },
+  "homepage": "https://github.com/tungloong/dsh-t3-inbox#readme",
+  "bugs": {
+    "url": "https://github.com/tungloong/dsh-t3-inbox/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "sidebar",
+    "inbox",
+    "t3"
+  ],
+  "icon": "icon.svg",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./model": "./lib/model.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "typert.js",
+    "lib/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "LICENSE",
+    "README.md",
+    "README.zh.md"
+  ],
+  "scripts": {
+    "test": "NODE_OPTIONS='--max-old-space-size=512' node --test-timeout=10000 --test test/*.test.js",
+    "check": "node --check index.js && node --check client.js && node --check typert.js && node --check lib/model.js && node --check lib/schemas.js && node --check lib/git-branch.js && node --check lib/snooze-presets.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-api-gateway",
+        "@deepseek-ai/dsh-cordis-client-runner"
+      ],
+      "external": [
+        "zod"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.1"
+  },
+  "dependencies": {
+    "zod": "4.6.6"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/dsh-typert-protocol": ">=0.2.2-rc.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.2-rc.1",
+    "jsdom": "^26.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
