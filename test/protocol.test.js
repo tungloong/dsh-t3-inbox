@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import { TYPERT } from '../typert.js';
 
@@ -69,7 +69,9 @@ test('Package manifest keeps DSH host packages in peerDependencies, not dependen
   assert.equal(typeof pkg.dependencies?.zod, 'string');
   assert.ok(pkg.dependencies.zod.length > 0);
   assert.equal(pkg.peerDependencies?.['@deepseek-ai/cordis'], '^4.1.0');
-  assert.equal(pkg.peerDependencies?.['@deepseek-ai/dsh-typert-protocol'], '>=0.2.2-rc.1');
+  const dshRange = '>=0.2.2-rc.1 <0.3.0 || >=0.2.3-rc.0 <0.3.0 || >=0.2.4-rc.0 <0.3.0 || >=0.2.5-rc.0 <0.3.0 || >=0.2.6-rc.0 <0.3.0';
+  assert.equal(pkg.engines?.dsh, dshRange);
+  assert.equal(pkg.peerDependencies?.['@deepseek-ai/dsh-typert-protocol'], dshRange);
   assert.equal(typeof pkg.devDependencies?.['@deepseek-ai/cordis'], 'string');
   assert.ok(pkg.devDependencies['@deepseek-ai/cordis'].length > 0);
   assert.equal(typeof pkg.devDependencies?.['@deepseek-ai/dsh-typert-protocol'], 'string');
@@ -83,6 +85,12 @@ test('Package manifest keeps DSH host packages in peerDependencies, not dependen
   assert.equal(pkg.publishConfig?.access, 'public');
   assert.ok(Array.isArray(pkg.files) && pkg.files.includes('LICENSE'));
   assert.ok(readFileSync(new URL('../LICENSE', import.meta.url), 'utf8').includes('Copyright (c) 2026 tungloong'));
+  const screenshots = JSON.parse(readFileSync(new URL('../screenshots.json', import.meta.url), 'utf8'));
+  assert.ok(Array.isArray(screenshots) && screenshots.length >= 1 && screenshots.length <= 8);
+  for (const rel of screenshots) {
+    assert.ok(typeof rel === 'string' && !rel.startsWith('/') && !rel.includes('..'));
+    assert.ok(existsSync(new URL(`../${rel}`, import.meta.url)));
+  }
 });
 
 function requireZod() {

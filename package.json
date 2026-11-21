@@ -1,6 +1,6 @@
 {
   "name": "dsh-t3-inbox",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "T3-inspired attention-first inbox sidebar for DeepSeek Harness (independent community plugin, not affiliated with Ping Labs or DeepSeek).",
   "license": "MIT",
@@ -76,14 +76,14 @@
     }
   },
   "engines": {
-    "dsh": ">=0.2.2-rc.1"
+    "dsh": ">=0.2.2-rc.1 <0.3.0 || >=0.2.3-rc.0 <0.3.0 || >=0.2.4-rc.0 <0.3.0 || >=0.2.5-rc.0 <0.3.0 || >=0.2.6-rc.0 <0.3.0"
   },
   "dependencies": {
     "zod": "4.6.6"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.1.0",
-    "@deepseek-ai/dsh-typert-protocol": ">=0.2.2-rc.1"
+    "@deepseek-ai/dsh-typert-protocol": ">=0.2.2-rc.1 <0.3.0 || >=0.2.3-rc.0 <0.3.0 || >=0.2.4-rc.0 <0.3.0 || >=0.2.5-rc.0 <0.3.0 || >=0.2.6-rc.0 <0.3.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.1.0",
