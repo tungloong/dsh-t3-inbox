@@ -5,7 +5,7 @@ An attention-first, T3 Code–inspired inbox sidebar for **DeepSeek Harness**.
 English | [简体中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.1-1b4ed8.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.2-1b4ed8.svg)](package.json)
 [![DeepSeek Harness](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.1-0f1115.svg)](package.json)
 
 > **Disclaimer:** Design and interaction are inspired by [T3 Code](https://github.com/pingdotgg/t3code). This is an independent community plugin and is **not** affiliated with Ping Labs or DeepSeek.

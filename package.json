@@ -1,6 +1,6 @@
 {
   "name": "dsh-t3-inbox",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "T3-inspired attention-first inbox sidebar for DeepSeek Harness (independent community plugin, not affiliated with Ping Labs or DeepSeek).",
   "license": "MIT",

@@ -5,7 +5,7 @@
 [English](README.md) | 简体中文
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.1-1b4ed8.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.2-1b4ed8.svg)](package.json)
 [![DeepSeek Harness](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.1-0f1115.svg)](package.json)
 
 > **声明：** 视觉与交互体验致敬开源项目 [T3 Code](https://github.com/pingdotgg/t3code)。本项目为独立社区插件，与 Ping Labs 或 DeepSeek 官方均无从属关系。

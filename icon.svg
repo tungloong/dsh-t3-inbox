@@ -1,8 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-  <rect width="40" height="40" rx="10" fill="#eef4ff"/>
-  <g fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 11h22v18H9z"/>
-    <path d="M9 22h6l2.5 3.5h5L25 22h6"/>
-    <circle cx="28" cy="13" r="3" fill="#2563eb" stroke="none"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="dsh-t3-inbox">
+  <defs>
+    <linearGradient id="dsh-t3i-bg" x1="16" y1="6" x2="112" y2="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#567fff"/>
+      <stop offset="100%" stop-color="#1f42cc"/>
+    </linearGradient>
+    <linearGradient id="dsh-t3i-cavity" x1="64" y1="24" x2="64" y2="78" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1631a8" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#102585" stop-opacity="0.72"/>
+    </linearGradient>
+    <linearGradient id="dsh-t3i-tray" x1="64" y1="60" x2="64" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8eefc"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#dsh-t3i-bg)"/>
+  <rect x="0.75" y="0.75" width="126.5" height="126.5" rx="27.25" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1.5"/>
+  <rect x="23" y="24" width="82" height="80" rx="18" fill="url(#dsh-t3i-cavity)"/>
+  <rect x="33" y="34" width="62" height="9.5" rx="4.75" fill="#ffffff" fill-opacity="0.34"/>
+  <rect x="33" y="48.5" width="44" height="10" rx="5" fill="#ffffff" fill-opacity="0.96"/>
+  <circle cx="88.5" cy="53.5" r="5.5" fill="#34d399"/>
+  <path d="M23 66h20.2a5 5 0 0 1 4.47 2.76l2.66 5.32A9 9 0 0 0 58.38 79h11.24a9 9 0 0 0 8.05-4.92l2.66-5.32A5 5 0 0 1 84.8 66H105v20c0 9.94-8.06 18-18 18H41c-9.94 0-18-8.06-18-18V66Z" fill="url(#dsh-t3i-tray)"/>
 </svg>
