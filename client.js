@@ -13,7 +13,7 @@ window.__ModuleLoader__.load({
     const SIDEBAR_APPEARANCE_KEY = 'dsh-t3-inbox:sidebar-appearance';
     const GLOBAL_PANELS_KEY = 'dsh-t3-inbox:global-panels';
     const MAX_FOOTER_PANELS = 3;
-    const DEFAULT_SIDEBAR_APPEARANCE = { mode:'host', light:'#fafafa', dark:'#000000' };
+    const DEFAULT_SIDEBAR_APPEARANCE = { mode:'auto', light:'#fafafa', dark:'#000000' };
     const NS = 'dsh-t3-inbox';
 
     const en = {
@@ -199,9 +199,10 @@ window.__ModuleLoader__.load({
       settings: 'Settings',
       sidebarView: 'Sidebar view',
       sidebarBackground: 'Background',
-      sidebarBackgroundDesc: 'Follow the current DSH theme or choose colors for this sidebar.',
+      sidebarBackgroundDesc: 'Use T3 colors on the native DSH theme, follow custom themes automatically, or choose your own.',
+      sidebarBackgroundAuto: 'Auto (default)',
       sidebarBackgroundT3: 'T3 colors',
-      sidebarBackgroundHost: 'DSH theme (default)',
+      sidebarBackgroundHost: 'DSH theme',
       sidebarBackgroundCustom: 'Custom colors',
       sidebarLightColor: 'Light mode color',
       sidebarDarkColor: 'Dark mode color',
@@ -452,9 +453,10 @@ window.__ModuleLoader__.load({
       settings: '设置',
       sidebarView: '侧栏视图',
       sidebarBackground: '背景',
-      sidebarBackgroundDesc: '沿用当前 DSH 主题，或为这个侧边栏单独选色。',
+      sidebarBackgroundDesc: '原生 DSH 主题下默认采用 T3 配色，检测到第三方皮肤时自动跟随，也可手动固定或自定义。',
+      sidebarBackgroundAuto: '自动（默认）',
       sidebarBackgroundT3: 'T3 配色',
-      sidebarBackgroundHost: '跟随 DSH 主题（默认）',
+      sidebarBackgroundHost: '跟随 DSH 主题',
       sidebarBackgroundCustom: '自定义颜色',
       sidebarLightColor: '浅色模式颜色',
       sidebarDarkColor: '深色模式颜色',
@@ -705,9 +707,10 @@ window.__ModuleLoader__.load({
       settings: '設定',
       sidebarView: 'サイドバー表示',
       sidebarBackground: '背景',
-      sidebarBackgroundDesc: '現在の DSH テーマに従うか、このサイドバー用の色を選択します。',
+      sidebarBackgroundDesc: '標準の DSH テーマでは T3 カラーを使い、サードパーティ製テーマでは自動で追従します。手動選択も可能です。',
+      sidebarBackgroundAuto: '自動（デフォルト）',
       sidebarBackgroundT3: 'T3 カラー',
-      sidebarBackgroundHost: 'DSH テーマ（デフォルト）',
+      sidebarBackgroundHost: 'DSH テーマ',
       sidebarBackgroundCustom: 'カスタムカラー',
       sidebarLightColor: 'ライトモードの色',
       sidebarDarkColor: 'ダークモードの色',
@@ -958,9 +961,10 @@ window.__ModuleLoader__.load({
       settings: 'Ajustes',
       sidebarView: 'Vista de barra lateral',
       sidebarBackground: 'Fondo',
-      sidebarBackgroundDesc: 'Sigue el tema actual de DSH o elige colores para esta barra lateral.',
+      sidebarBackgroundDesc: 'Usa colores de T3 en el tema nativo de DSH, sigue temas personalizados automáticamente o elige los tuyos.',
+      sidebarBackgroundAuto: 'Automático (predeterminado)',
       sidebarBackgroundT3: 'Colores de T3',
-      sidebarBackgroundHost: 'Tema de DSH (predeterminado)',
+      sidebarBackgroundHost: 'Tema de DSH',
       sidebarBackgroundCustom: 'Colores personalizados',
       sidebarLightColor: 'Color en modo claro',
       sidebarDarkColor: 'Color en modo oscuro',
@@ -1211,9 +1215,10 @@ window.__ModuleLoader__.load({
       settings: 'Paramètres',
       sidebarView: 'Vue barre latérale',
       sidebarBackground: 'Arrière-plan',
-      sidebarBackgroundDesc: 'Suivez le thème DSH actuel ou choisissez des couleurs pour cette barre latérale.',
+      sidebarBackgroundDesc: 'Utilise les couleurs T3 sur le thème DSH natif, suit automatiquement les thèmes personnalisés ou vous laisse choisir.',
+      sidebarBackgroundAuto: 'Automatique (par défaut)',
       sidebarBackgroundT3: 'Couleurs T3',
-      sidebarBackgroundHost: 'Thème DSH (par défaut)',
+      sidebarBackgroundHost: 'Thème DSH',
       sidebarBackgroundCustom: 'Couleurs personnalisées',
       sidebarLightColor: 'Couleur en mode clair',
       sidebarDarkColor: 'Couleur en mode sombre',
@@ -1464,9 +1469,10 @@ window.__ModuleLoader__.load({
       settings: 'Einstellungen',
       sidebarView: 'Seitenleisten-Ansicht',
       sidebarBackground: 'Hintergrund',
-      sidebarBackgroundDesc: 'Aktuellem DSH-Theme folgen oder eigene Farben für diese Seitenleiste wählen.',
+      sidebarBackgroundDesc: 'Nutzt T3-Farben beim nativen DSH-Theme, folgt eigenen Themes automatisch oder lässt dich selbst wählen.',
+      sidebarBackgroundAuto: 'Automatisch (Standard)',
       sidebarBackgroundT3: 'T3-Farben',
-      sidebarBackgroundHost: 'DSH-Theme (Standard)',
+      sidebarBackgroundHost: 'DSH-Theme',
       sidebarBackgroundCustom: 'Benutzerdefinierte Farben',
       sidebarLightColor: 'Farbe (Heller Modus)',
       sidebarDarkColor: 'Farbe (Dunkler Modus)',
@@ -1717,9 +1723,10 @@ window.__ModuleLoader__.load({
       settings: 'Настройки',
       sidebarView: 'Вид боковой панели',
       sidebarBackground: 'Фон',
-      sidebarBackgroundDesc: 'Следовать текущей теме DSH или выбрать цвета для этой боковой панели.',
+      sidebarBackgroundDesc: 'Использует цвета T3 в стандартной теме DSH, автоматически подстраивается под сторонние темы или позволяет выбрать свои.',
+      sidebarBackgroundAuto: 'Авто (по умолчанию)',
       sidebarBackgroundT3: 'Цвета T3',
-      sidebarBackgroundHost: 'Тема DSH (по умолчанию)',
+      sidebarBackgroundHost: 'Тема DSH',
       sidebarBackgroundCustom: 'Свои цвета',
       sidebarLightColor: 'Цвет в светлой теме',
       sidebarDarkColor: 'Цвет в тёмной теме',
@@ -1970,9 +1977,10 @@ window.__ModuleLoader__.load({
       settings: 'Configurações',
       sidebarView: 'Visualização da barra lateral',
       sidebarBackground: 'Fundo',
-      sidebarBackgroundDesc: 'Seguir o tema atual do DSH ou escolher cores para esta barra lateral.',
+      sidebarBackgroundDesc: 'Usa cores do T3 no tema nativo do DSH, acompanha temas personalizados automaticamente ou permite escolher.',
+      sidebarBackgroundAuto: 'Automático (padrão)',
       sidebarBackgroundT3: 'Cores do T3',
-      sidebarBackgroundHost: 'Tema do DSH (padrão)',
+      sidebarBackgroundHost: 'Tema do DSH',
       sidebarBackgroundCustom: 'Cores personalizadas',
       sidebarLightColor: 'Cor no modo claro',
       sidebarDarkColor: 'Cor no modo escuro',
@@ -2833,12 +2841,61 @@ window.__ModuleLoader__.load({
         return 'footer';
       }
     }
+    const NATIVE_DSH_SURFACES = {
+      light: { base:'#ffffff', sidebar:'#f9fafb' },
+      dark: { base:'#151517', sidebar:'#1b1b1c' },
+    };
+    function normalizeCssColor(raw) {
+      if (typeof raw !== 'string') return null;
+      const value = raw.trim().toLowerCase();
+      if (!value) return null;
+      if (value === 'white') return '#ffffff';
+      if (value === 'black') return '#000000';
+      if (/^#[0-9a-f]{6}$/.test(value)) return value;
+      if (/^#[0-9a-f]{3}$/.test(value)) return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
+      if (/^#[0-9a-f]{8}$/.test(value)) return value.slice(7) === 'ff' ? value.slice(0, 7) : null;
+      const rgb = value.match(/^rgba?\(\s*(\d{1,3})\s*(?:,\s*|\s+)(\d{1,3})\s*(?:,\s*|\s+)(\d{1,3})(?:\s*(?:,|\/)\s*([0-9.]+%?))?\s*\)$/);
+      if (!rgb) return null;
+      if (rgb[4] !== undefined) {
+        const alpha = rgb[4].endsWith('%') ? parseFloat(rgb[4]) / 100 : parseFloat(rgb[4]);
+        if (!Number.isFinite(alpha) || alpha < 0.999) return null;
+      }
+      const channels = [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+      if (channels.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) return null;
+      return `#${channels.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+    }
+    function resolveCssVarValue(bodyStyle, rootStyle, prop, depth = 0) {
+      if (depth > 4) return '';
+      const raw = (bodyStyle?.getPropertyValue(prop) || '').trim() || (rootStyle?.getPropertyValue(prop) || '').trim();
+      const ref = raw.match(/^var\(\s*(--[^,\s)]+)(?:\s*,\s*([^)]+))?\s*\)$/);
+      if (!ref) return raw;
+      const nested = resolveCssVarValue(bodyStyle, rootStyle, ref[1], depth + 1);
+      return nested || (ref[2] ? ref[2].trim() : '');
+    }
+    function hasCustomHostTheme(doc = typeof document !== 'undefined' ? document : null) {
+      const body = doc?.body;
+      const root = doc?.documentElement;
+      const view = doc?.defaultView ?? (typeof window !== 'undefined' ? window : null);
+      if (!body || !view?.getComputedStyle) return false;
+      const bodyStyle = view.getComputedStyle(body);
+      const rootStyle = root ? view.getComputedStyle(root) : null;
+      const native = body.hasAttribute('data-ds-dark-theme') ? NATIVE_DSH_SURFACES.dark : NATIVE_DSH_SURFACES.light;
+      const baseRaw = resolveCssVarValue(bodyStyle, rootStyle, '--dsw-alias-bg-base');
+      const sidebarRaw = resolveCssVarValue(bodyStyle, rootStyle, '--dsw-specific-sidebar-fill');
+      if (baseRaw && normalizeCssColor(baseRaw) !== native.base) return true;
+      if (sidebarRaw && normalizeCssColor(sidebarRaw) !== native.sidebar) return true;
+      return false;
+    }
+    function resolveEffectiveBackgroundMode(mode, doc) {
+      if (mode === 'auto') return hasCustomHostTheme(doc) ? 'host' : 't3';
+      return mode;
+    }
     function normalizeSidebarAppearance(value) {
       const defaults = DEFAULT_SIDEBAR_APPEARANCE;
       const mode = value?.mode;
       const color = (candidate, fallback) => typeof candidate === 'string' && /^#[0-9a-f]{6}$/i.test(candidate) ? candidate.toLowerCase() : fallback;
       return {
-        mode:mode === 't3' || mode === 'custom' ? mode : defaults.mode,
+        mode:mode === 'auto' || mode === 't3' || mode === 'host' || mode === 'custom' ? mode : defaults.mode,
         light:color(value?.light, defaults.light),
         dark:color(value?.dark, defaults.dark),
       };
@@ -5042,7 +5099,7 @@ window.__ModuleLoader__.load({
       return h(React.Fragment,null,
         h(InboxSettingRow,{id:backgroundId,label:t('sidebarBackground'),description:t('sidebarBackgroundDesc'),expanded:isCustom},
           h(SettingsChoice,{id:backgroundId,label:t('sidebarBackground'),value:appearance.mode,onChange:(mode) => runtime.setSidebarAppearance({mode}),options:[
-            ['host',t('sidebarBackgroundHost')],['t3',t('sidebarBackgroundT3')],['custom',t('sidebarBackgroundCustom')],
+            ['auto',t('sidebarBackgroundAuto')],['t3',t('sidebarBackgroundT3')],['host',t('sidebarBackgroundHost')],['custom',t('sidebarBackgroundCustom')],
           ]})),
         isCustom ? h('div',{className:'t3i-settings-subpanel t3i-settings-colors'},
           ['light','dark'].map((theme) => h(InboxSettingRow,{id:`${id}-${theme}`,key:theme,label:t(theme === 'light' ? 'sidebarLightColor' : 'sidebarDarkColor')},
@@ -8937,6 +8994,8 @@ window.__ModuleLoader__.load({
         ctx.effect(() => {
           const shellRoot = typeof document !== 'undefined' ? document.documentElement : null;
           if (!shellRoot || typeof shellRoot.setAttribute !== 'function') return () => {};
+          const doc = shellRoot.ownerDocument;
+          const view = doc?.defaultView ?? (typeof window !== 'undefined' ? window : null);
           const clearColors = () => {
             shellRoot.style.removeProperty('--t3i-sidebar-light');
             shellRoot.style.removeProperty('--t3i-sidebar-dark');
@@ -8947,6 +9006,76 @@ window.__ModuleLoader__.load({
             shellRoot.removeAttribute('data-t3-inbox-background');
             clearColors();
           };
+          let observers = [];
+          let pendingFrame = 0;
+          let pendingMicrotask = false;
+          const stopWatchingTheme = () => {
+            for (const observer of observers) observer.disconnect();
+            observers = [];
+            if (pendingFrame && view?.cancelAnimationFrame) view.cancelAnimationFrame(pendingFrame);
+            pendingFrame = 0;
+            pendingMicrotask = false;
+          };
+          const isExternalStyleNode = (node) => {
+            if (!node || node.nodeType !== 1) return false;
+            if (node.tagName === 'STYLE') return !node.hasAttribute('data-t3-inbox');
+            if (node.tagName === 'LINK') return String(node.getAttribute('rel') || '').toLowerCase().includes('stylesheet');
+            return false;
+          };
+          const applyBackground = ({ mode, light, dark }) => {
+            const effective = resolveEffectiveBackgroundMode(mode, doc);
+            if (shellRoot.getAttribute('data-t3-inbox-background') !== effective) {
+              shellRoot.setAttribute('data-t3-inbox-background', effective);
+            }
+            if (effective === 'custom') {
+              shellRoot.style.setProperty('--t3i-sidebar-light', light);
+              shellRoot.style.setProperty('--t3i-sidebar-dark', dark);
+            } else clearColors();
+          };
+          const scheduleThemeRecheck = () => {
+            if (pendingFrame || pendingMicrotask) return;
+            const run = () => {
+              pendingFrame = 0;
+              pendingMicrotask = false;
+              const current = store.getSnapshot();
+              if (current.mode === 'inbox' && current.wide === true && current.sidebarAppearance.mode === 'auto') {
+                applyBackground(current.sidebarAppearance);
+              }
+            };
+            if (view?.requestAnimationFrame) pendingFrame = view.requestAnimationFrame(run);
+            else { pendingMicrotask = true; Promise.resolve().then(run); }
+          };
+          const startWatchingTheme = () => {
+            if (observers.length > 0 || !view?.MutationObserver) return;
+            if (doc?.head) {
+              const headObserver = new view.MutationObserver((records) => {
+                for (const rec of records) {
+                  if (rec.type === 'childList') {
+                    if (isExternalStyleNode(rec.target) ||
+                      [...rec.addedNodes, ...rec.removedNodes].some(isExternalStyleNode)) {
+                      scheduleThemeRecheck(); return;
+                    }
+                  } else if (rec.type === 'characterData' && isExternalStyleNode(rec.target?.parentNode)) {
+                    scheduleThemeRecheck(); return;
+                  }
+                }
+              });
+              headObserver.observe(doc.head, { childList:true, subtree:true, characterData:true });
+              observers.push(headObserver);
+            }
+            const rootObserver = new view.MutationObserver((records) => {
+              if (records.some((rec) => !String(rec.attributeName || '').startsWith('data-t3-inbox'))) {
+                scheduleThemeRecheck();
+              }
+            });
+            rootObserver.observe(shellRoot, { attributes:true });
+            observers.push(rootObserver);
+            if (doc?.body) {
+              const bodyObserver = new view.MutationObserver(() => { scheduleThemeRecheck(); });
+              bodyObserver.observe(doc.body, { attributes:true });
+              observers.push(bodyObserver);
+            }
+          };
           let previous;
           const sync = () => {
             const current = store.getSnapshot();
@@ -8954,19 +9083,19 @@ window.__ModuleLoader__.load({
               current.panelsPosition === previous.panelsPosition && current.sidebarAppearance === previous.sidebarAppearance) return;
             previous = current;
             if (current.mode === 'inbox' && current.wide === true) {
-              const {mode,light,dark} = current.sidebarAppearance;
               shellRoot.setAttribute('data-t3-inbox','wide');
               shellRoot.setAttribute('data-t3-inbox-nav',current.panelsPosition === 'top' ? 'on' : 'off');
-              shellRoot.setAttribute('data-t3-inbox-background',mode);
-              if (mode === 'custom') {
-                shellRoot.style.setProperty('--t3i-sidebar-light',light);
-                shellRoot.style.setProperty('--t3i-sidebar-dark',dark);
-              } else clearColors();
-            } else clearShell();
+              applyBackground(current.sidebarAppearance);
+              if (current.sidebarAppearance.mode === 'auto') startWatchingTheme();
+              else stopWatchingTheme();
+            } else {
+              stopWatchingTheme();
+              clearShell();
+            }
           };
           sync();
           const unsubscribe = store.subscribe(sync);
-          return () => { unsubscribe(); clearShell(); };
+          return () => { unsubscribe(); stopWatchingTheme(); clearShell(); };
         },'t3-inbox: host shell chrome adaptation');
         ctx.effect(() => {
           let disposeBrowser;

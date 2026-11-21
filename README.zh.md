@@ -5,7 +5,7 @@
 [English](README.md) | 简体中文
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.2-1b4ed8.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.3-1b4ed8.svg)](package.json)
 [![DeepSeek Harness](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.1-0f1115.svg)](package.json)
 
 > **声明：** 视觉与交互体验致敬开源项目 [T3 Code](https://github.com/pingdotgg/t3code)。本项目为独立社区插件，与 Ping Labs 或 DeepSeek 官方均无从属关系。
@@ -38,7 +38,7 @@
 - **键盘流、指针拖拽与批量管理**
   - 桌面端按住 **`⌘` / `Ctrl`** 显示 `1–9` 跳转角标；同分区 **按住垂直扫选（Sweep）** 批量收尾 / 唤醒 / 取消收尾；**`⌘+Click` / `⇧+Click`** 多选触发批量右键菜单；支持跨 `Pinned` / `Active` / `Settled` **指针拖拽重排**；`F2` 或双击标题即可 **内联重命名**。
 - **极简底栏集成与 8 语言支持**
-  - **全局面板入口** 默认紧凑收进左下角设置齿轮右侧（超出 3 个自动折叠进 `···` 更多菜单），也可切换至顶部或隐藏；提供 3 种 **侧栏背景**（跟随 DSH 主题 / T3 预设 / 自定义浅深色）；内置 **简体中文、English、日本語、Español、Français、Deutsch、Русский、Português** 8 种语言。
+  - **全局面板入口** 默认紧凑收进左下角设置齿轮右侧（超出 3 个自动折叠进 `···` 更多菜单），也可切换至顶部或隐藏；提供智能 **侧栏背景**（默认 `自动`：原生 DSH 主题下用 T3 配色，检测到第三方皮肤时自动跟随，亦可手动切 `T3 配色` / `跟随 DSH 主题` / `自定义颜色`）；内置 **简体中文、English、日本語、Español、Français、Deutsch、Русский、Português** 8 种语言。
 
 ## 安装方法
 
@@ -81,7 +81,7 @@ dsh plugin --profile <profile> add dsh-t3-inbox
 
 - **侧栏视图**：随时切换 **收件箱视图（Inbox View）** 或宿主原生 **工作区视图（Workspaces View）**。
 - **外观与布局**（在收件箱视图下显示）：
-  - **背景**：可选 `跟随 DSH 主题（默认）`、`T3 预设色`（浅色 `#fafafa` / 深色 `#000000`）或 `自定义` 浅深双色。
+  - **背景**：可选 `自动（默认）`（原生 DSH 主题下采用 T3 `#fafafa` / `#000000` 配色，检测到第三方皮肤插件时自动跟随宿主）、`T3 配色`、`跟随 DSH 主题` 或 `自定义颜色` 浅深双色。
   - **全局面板**：可选 `底栏（默认）`（置入左下角设置旁，最多平铺 3 个并折叠多余面板）、`顶部` 或 `隐藏`。
 - **收件箱行为**（在收件箱视图下显示）：
   - **运行中分组**：开启后将运行中/等待中会话收起到「运行中」分组，完成后返回收件箱并显示未读完成。

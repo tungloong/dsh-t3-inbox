@@ -561,8 +561,8 @@ test('left footer gear opens general Settings while T3 Inbox settings manages si
     assert.equal(footer('T3 Inbox settings'),null);
     await act(async () => { gear.click(); });
     assert.deepEqual(env.openedSettings,['default']);
-    assert.equal(shell.dataset.t3InboxBackground,'host');
-    assert.equal(control('Background').value,'host');
+    assert.equal(shell.dataset.t3InboxBackground,'t3');
+    assert.equal(control('Background').value,'auto');
     assert.deepEqual([...settingsHost.querySelectorAll('.t3i-settings-group-title')].map((heading) => heading.textContent),[
       'Appearance & layout','Inbox behavior',
     ]);
@@ -634,7 +634,7 @@ test('first launch uses T3 defaults, restarts preserve user preferences, and bun
   const assertStartupSettings = ({mode,panelsPosition,sidebarAppearance,workingShelfEnabled,timeFormat}) => {
     assert.equal(mode,'inbox');
     assert.equal(panelsPosition,'footer');
-    assert.deepEqual(sidebarAppearance,{mode:'host',light:'#fafafa',dark:'#000000'});
+    assert.deepEqual(sidebarAppearance,{mode:'auto',light:'#fafafa',dark:'#000000'});
     assert.equal(workingShelfEnabled,true);
     assert.equal(timeFormat,'locale');
   };
@@ -713,6 +713,75 @@ test('first launch uses T3 defaults, restarts preserve user preferences, and bun
     try {
       assert.equal(legacyEnv.runtime.store.getSnapshot().panelsPosition, expected);
     } finally { legacyEnv.dispose(); }
+  }
+});
+
+test('auto background uses T3 colors on native DSH theme, yields reactively to third-party themes, and stops observing when locked', async () => {
+  const env = await clientHarness(['a'], { render:true });
+  const previousAct = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const flushFrame = () => new Promise((resolve) => {
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(() => setTimeout(resolve, 0));
+    else setTimeout(resolve, 10);
+  });
+  let mounted;
+  try {
+    const shell = document.documentElement;
+    const nativeStyle = document.createElement('style');
+    nativeStyle.textContent = [
+      ':root { --dsw-static-neutral-bluish-00: rgb(255, 255, 255); --dsw-static-neutral-bluish-50: rgb(249, 250, 251); --dsw-static-neutral-bluish-900: rgb(27, 27, 28); --dsw-static-neutral-bluish-950: rgb(21, 21, 23); }',
+      'body { --dsw-alias-bg-base: var(--dsw-static-neutral-bluish-00); --dsw-specific-sidebar-fill: var(--dsw-static-neutral-bluish-50); }',
+      'body[data-ds-dark-theme] { --dsw-alias-bg-base: var(--dsw-static-neutral-bluish-950); --dsw-specific-sidebar-fill: var(--dsw-static-neutral-bluish-900); }',
+    ].join('\n');
+    document.head.append(nativeStyle);
+
+    mounted = await mountBrowser(env, { t:enTranslator(env) });
+    await act(async () => { env.runtime.noteWide(true); });
+    assert.equal(env.runtime.store.getSnapshot().sidebarAppearance.mode, 'auto');
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+
+    // Native dark theme also resolves to T3 colors.
+    document.body.setAttribute('data-ds-dark-theme', '');
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+    document.body.removeAttribute('data-ds-dark-theme');
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+
+    // Third-party skin injected later automatically yields to host theme.
+    const skinStyle = document.createElement('style');
+    skinStyle.dataset.plugin = 'dsh-warm-charcoal-theme';
+    skinStyle.textContent = 'body { --dsw-alias-bg-base: #F7F7F2; --dsw-specific-sidebar-fill: #F5F5F0; }';
+    document.head.append(skinStyle);
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 'host');
+
+    // Editing style text back to native colors or removing the skin restores T3 colors.
+    skinStyle.textContent = 'body { --dsw-alias-bg-base: #ffffff; --dsw-specific-sidebar-fill: #f9fafb; }';
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+
+    skinStyle.textContent = 'body { --dsw-alias-bg-base: #f5f4ed; }';
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 'host');
+
+    // Explicitly selecting T3 overrides third-party theme detection.
+    await act(async () => { env.runtime.setSidebarAppearance({ mode:'t3' }); });
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+    skinStyle.textContent = 'body { --dsw-alias-bg-base: #1e1e1e; }';
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+
+    // Returning to Auto picks up the active third-party skin, then removing it restores T3.
+    await act(async () => { env.runtime.setSidebarAppearance({ mode:'auto' }); });
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 'host');
+    skinStyle.remove();
+    await flushFrame();
+    assert.equal(shell.getAttribute('data-t3-inbox-background'), 't3');
+  } finally {
+    if (mounted) await act(async () => { mounted.root.unmount(); });
+    env.dispose();
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previousAct;
   }
 });
 

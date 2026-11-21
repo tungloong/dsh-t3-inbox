@@ -5,7 +5,7 @@ An attention-first, T3 Code–inspired inbox sidebar for **DeepSeek Harness**.
 English | [简体中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.2-1b4ed8.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.3-1b4ed8.svg)](package.json)
 [![DeepSeek Harness](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.1-0f1115.svg)](package.json)
 
 > **Disclaimer:** Design and interaction are inspired by [T3 Code](https://github.com/pingdotgg/t3code). This is an independent community plugin and is **not** affiliated with Ping Labs or DeepSeek.
@@ -38,7 +38,7 @@ When you run multiple agents across several repositories, chronological session 
 - **Keyboard, Drag & Batch Workflows**
   - **Hold `⌘` / `Ctrl`** (Desktop) to reveal `1–9` jump badges; **press & sweep** vertically to batch-settle, wake, or un-settle; **`⌘+Click` / `⇧+Click`** multi-select with batch context menus; **pointer drag-and-drop** between `Pinned`, `Active`, and `Settled`; **`F2` or double-click** inline rename.
 - **Clean Chrome Integration & 8 Languages**
-  - Fits flush into the wide sidebar with bottom-left **Global panels** icons (next to Settings, overflowing into a `More` menu beyond 3 panels), three **Background** modes (`Follow DSH theme`, `T3 colors`, `Custom`), and full localization in **English, 简体中文, 日本語, Español, Français, Deutsch, Русский, and Português**.
+  - Fits flush into the wide sidebar with bottom-left **Global panels** icons (next to Settings, overflowing into a `More` menu beyond 3 panels), smart **Background** modes (`Auto (default)` — T3 colors on the native DSH theme, automatically following third-party themes — plus `T3 colors`, `DSH theme`, and `Custom colors`), and full localization in **English, 简体中文, 日本語, Español, Français, Deutsch, Русский, and Português**.
 
 ## Installation
 
@@ -81,7 +81,7 @@ Open **Settings** from the gear button at the lower left of Inbox View, then cho
 
 - **Sidebar view**: Switch between **Inbox View** and native **Workspaces View** at any time.
 - **Appearance & layout** *(shown in Inbox View)*:
-  - **Background**: `Follow DSH theme (Default)`, `T3 colors` (`#fafafa` / `#000000`), or `Custom` light/dark color pickers.
+  - **Background**: `Auto (default)` (uses T3 `#fafafa` / `#000000` on the native DSH theme and automatically follows third-party skins), `T3 colors`, `DSH theme`, or `Custom` light/dark color pickers.
   - **Global panels**: Choose `Footer (Default)` (next to Settings, up to 3 icons + More menu), `Top`, or `Hidden`.
 - **Inbox behavior** *(shown in Inbox View)*:
   - **Working section**: Fold running/waiting threads into a collapsible **Working** shelf (turns back to Active once an unread completion arrives).
