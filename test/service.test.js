@@ -297,6 +297,31 @@ test('an intervening action rejects stale Undo without lowering revision', async
   assert.equal(read().revision, 2);
 });
 
+test('undo skips pre-commit refreshSessionCard when snapshot is ready and honors UNDO_GRACE_MS before expiring', async () => {
+  const { service, request, read } = harness();
+  let refreshCalls = 0;
+  service.refreshSessionCard = async () => { refreshCalls += 1; };
+
+  const settled = await service.act(request('settle'));
+  assert.equal(refreshCalls, 1);
+  refreshCalls = 0;
+
+  // Simulate an in-flight batch undo arriving 1s after the 5s UI bar expires (inside UNDO_GRACE_MS).
+  read().operations[0].receipt.expiresAt = Date.now() - 1000;
+  const withinGrace = await service.act(request('undo', { targetOperationId: settled.receipt.operationId }));
+  assert.equal(withinGrace.status, 'committed');
+  assert.equal(refreshCalls, 0);
+  assert.deepEqual(read().settledThrough, {});
+
+  // Once beyond UNDO_GRACE_MS, Host still rejects expired Undo as stale.
+  const settledAgain = await service.act(request('settle'));
+  refreshCalls = 0;
+  read().operations.at(-1).receipt.expiresAt = Date.now() - 3000;
+  const pastGrace = await service.act(request('undo', { targetOperationId: settledAgain.receipt.operationId }));
+  assert.equal(pastGrace.status, 'stale');
+  assert.equal(refreshCalls, 0);
+});
+
 test('retired child results survive catalog removal until tree settlement', async () => {
   const root = { sessionId: 'root', progress: progress('root', 100), runtime: { running: false, queue: [], completeness: 'complete' }, label: 'Root', pendingInput: [] };
   const childProgress = progress('child', 9);
@@ -769,4 +794,28 @@ test('slow background buildSnapshot does not clobber a newer act mutation', asyn
   await bgRefresh;
   assert.equal(service.currentSnapshot.cards.find((item) => item.sessionId === 'a').section, 'settled');
   assert.equal(service.currentSnapshot.cards.find((item) => item.sessionId === 'a').revision, 1);
+});
+
+test('act honors optional request.at for batch settle/restore ordering while keeping before snapshots and undo grace on wall clock', async () => {
+  const { service, request, read } = harness();
+  const explicitSettleAt = 1_700_000_123_000;
+  const settled = await service.act(request('settle', { at: explicitSettleAt }));
+  assert.equal(settled.status, 'committed');
+  assert.equal(read().settledAt, explicitSettleAt);
+  assert.equal(read().unsettledAt, null);
+  assert.ok(settled.receipt.committedAt >= Date.now() - 5000);
+  assert.equal(settled.receipt.before.settledAt, null);
+
+  // Explicit request.at on undo must never bypass real wall-clock UNDO_GRACE_MS expiration.
+  read().operations[0].receipt.expiresAt = Date.now() - 3000;
+  const expiredUndo = await service.act(request('undo', { targetOperationId: settled.receipt.operationId, at: explicitSettleAt + 1 }));
+  assert.equal(expiredUndo.status, 'stale');
+
+  const explicitRestoreAt = 1_700_000_124_500;
+  const restored = await service.act(request('restore', { at: explicitRestoreAt }));
+  assert.equal(restored.status, 'committed');
+  assert.equal(read().settledAt, null);
+  assert.equal(read().unsettledAt, explicitRestoreAt);
+  assert.equal(restored.receipt.before.settledAt, explicitSettleAt);
+  assert.equal(recordSchema.safeParse(read()).success, true);
 });

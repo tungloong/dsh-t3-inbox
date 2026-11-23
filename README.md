@@ -1,44 +1,53 @@
 # dsh-t3-inbox
 
-An attention-first, T3 Code–inspired inbox sidebar for **DeepSeek Harness**.
+An attention-first, T3 Code–inspired inbox sidebar for [**DeepSeek Harness**](https://github.com/deepseek-ai/deepseek-harness) — stop babysitting running agents and focus only on what needs your decision right now.
 
 English | [简体中文](README.zh.md)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.3-1b4ed8.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.4-1b4ed8.svg)](package.json)
 [![DeepSeek Harness](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.1-0f1115.svg)](package.json)
 
-> **Disclaimer:** Design and interaction are inspired by [T3 Code](https://github.com/pingdotgg/t3code). This is an independent community plugin and is **not** affiliated with Ping Labs or DeepSeek.
+> **Disclaimer:** Visual design and attention-inbox workflow are inspired by [T3 Code](https://github.com/pingdotgg/t3code). This is an independent community plugin and is **not** affiliated with Ping Labs or DeepSeek.
 
 ![Light and Dark sidebar comparison](docs/images/sidebar-light-dark.png)
 
-## Why T3 Inbox?
+## Why dsh-t3-inbox?
 
-When you run multiple agents across several repositories, chronological session lists quickly turn noisy: active completions, pending approvals, background runs, and old threads all look alike.
+When you run 10+ coding agent sessions across repositories, chronological sidebars and folder trees turn into noise. You end up burning attention on two things: compulsively checking threads that are still working, and hunting for which chat is stuck waiting on a "Yes".
 
-**T3 Inbox** turns the DeepSeek Harness sidebar into an attention queue—derived safely from your session event logs without altering your underlying conversations—and lets you switch back to the native **Workspaces View** anytime in one click.
+**dsh-t3-inbox** reorganizes your DeepSeek Harness sidebar around **human attention** instead of chronology:
+
+- **Separate running work from what needs you:** In-progress threads sit apart in a quieter **Working** section below (collapsible anytime) instead of cluttering your queue, then surface back to the inbox the moment they finish or need input.
+- **Status and context right on the card:** Every card shows explicit status text (`Approval`, `Input`, `Failed`, `Limited`, `Woke`, `Done`), a colored project monogram, and its Git branch / worktree context so you can see who is waiting at a glance.
+- **Keep the queue clean with Settle and Snooze:** Click **Settle** to move finished threads to the bottom shelf without deleting them, or **Snooze** anything that can wait until later — keeping only what needs action right now in your inbox.
+
+## In Action
+
+Click to **Settle** one thread, hold and **sweep** vertically to clear the rest, press **`⌘Z`** to bring everything back in one frame, or **Snooze** a thread for later:
+
+![Interactive workflow demo: single settle, vertical sweep, ⌘Z undo, and snooze](docs/images/demo-en.gif)
 
 ## Features
 
-- **Attention Shelves, Not Destructive Deletes**
-  - Organizes sessions into **Pinned**, **Active** (`Approval`, `Input`, `Failed`, `Limited`, `Woke`, `Done`), **Working** (optional collapsible shelf with live timers), **Snoozed** (`36px` compact rows showing remaining wake time), and bottom-anchored **Settled** (`10 + 25` pagination).
-  - **Settle** and **Snooze** only update lightweight plugin attention metadata—never archiving a session, stopping a running turn, answering prompts, or canceling queued work.
-  - Subagent / tree awareness aggregates verified local children into their root card, including `Waiting` subagent indicators.
-- **Fast, Durable & Reversible Interactions**
-  - **O(1) incremental Host refreshes** paired with **optimistic Client updates** and automatic rollback on failure.
-  - **5-second conditional Undo (`⌘Z` / `Ctrl+Z`)** in the footer bar for Settle, Snooze, and direct Unpin, backed by revision checks and idempotent operation IDs.
-  - Viewing a session marks unseen completions as seen automatically; **Mark unread** lets you bring a thread back to attention anytime.
-- **Flexible Snoozing**
-  - Up to **8 editable Snooze shortcuts** (`minutes`, `hours`, `days`, or specific weekday clocks) plus a per-thread **Custom snooze** modal with a keyboard-accessible **Date and time** calendar picker and **Duration** stepper.
-  - Ordinary questions with valid Host request identity can be deferred cleanly until wake; approvals and newly arrived prompts surface immediately so critical work is never hidden.
-- **Ranked Search, Project Filter & Git Context**
-  - Combobox search ranking across thread titles, Git branches, project names, short IDs, and debounced session message excerpts (`<mark>` highlights).
-  - Multi-select **Project filter** (`Shift+Click`) with colored 18-hue SVG monograms and corner checkmarks.
-  - Git branch & **Git worktree** indicators plus model metadata in hover preview cards.
-- **Keyboard, Drag & Batch Workflows**
-  - **Hold `⌘` / `Ctrl`** (Desktop) to reveal `1–9` jump badges; **press & sweep** vertically to batch-settle, wake, or un-settle; **`⌘+Click` / `⇧+Click`** multi-select with batch context menus; **pointer drag-and-drop** between `Pinned`, `Active`, and `Settled`; **`F2` or double-click** inline rename.
-- **Clean Chrome Integration & 8 Languages**
-  - Fits flush into the wide sidebar with bottom-left **Global panels** icons (next to Settings, overflowing into a `More` menu beyond 3 panels), smart **Background** modes (`Auto (default)` — T3 colors on the native DSH theme, automatically following third-party themes — plus `T3 colors`, `DSH theme`, and `Custom colors`), and full localization in **English, 简体中文, 日本語, Español, Français, Deutsch, Русский, and Português**.
+- **Attention Shelves: Pinned, Active & Working Flow**
+  - Automatically routes threads across **Pinned**, **Active**, and a dedicated **Working** section (muted visual weight, live elapsed timers, collapsible anytime) — keeping running tasks cleanly separated from what needs your decision, then rising back to the top when done, complete with subagent tree aggregation and `Waiting` status indicators.
+  - Every card surfaces explicit status text (`Approval`, `Input`, `Failed`, `Limited`, `Woke`, `Done`), a colored project monogram, and **Git branch & worktree** indicators, plus hover preview cards with full title, project, branch, and current model.
+- **Settle Instead of Archive**
+  - **Settle** moves finished threads to a quiet bottom-anchored **Settled** shelf (`10 + 25` pagination) instead of hiding them away — your inbox stays calm while every thread remains one click away.
+  - Press and **sweep vertically** across Settle, Wake, or Un-settle buttons to process a whole batch at once, backed by a **5-second `⌘Z` / `Ctrl+Z` Undo bar**.
+  - Viewing a session clears its unread `Done` marker automatically; **Mark unread** brings any thread back to attention anytime.
+- **Snooze for Mental Overload & Deferred Follow-Ups**
+  - Not done yet, just not right now? Move low-urgency threads to compact `36px` **Snoozed** rows with live wake countdowns so they stop cluttering your active queue.
+  - Customize up to **8 quick-snooze presets** (`minutes`, `hours`, `days`, or specific weekday clocks) or open the **Custom snooze** modal with a keyboard-accessible calendar and duration picker.
+  - Urgent **Approvals** and newly arrived prompts still surface immediately so critical work is never missed.
+- **Ranked Search, Project Filter, Keyboard & Drag**
+  - **Ranked search** across titles, Git branches, project names, short IDs, and debounced message excerpts (`<mark>` highlights), paired with a multi-select **Project filter** (`Shift+Click`).
+  - **Hold `⌘` / `Ctrl`** (Desktop) to reveal `1–9` jump badges; **`⌘+Click` / `⇧+Click`** multi-select with batch context menus; **drag-and-drop** across `Pinned`, `Active`, and `Settled`; **`F2` or double-click** inline rename.
+- **Zero-Risk Integration, Auto Theme Detection & 8 Languages**
+  - Stores only lightweight plugin attention metadata — never modifies session logs, archives conversations, stops running turns, answers prompts, or cancels queued work.
+  - **1-click escape hatch:** Switch back to the native **Workspaces View** anytime in **Settings → Inbox** with all sessions and preferences intact.
+  - **Auto background** applies T3 colors on the native DSH theme and automatically follows third-party skins; bottom-left **Global panels** keep the chrome flush; localized in **English, 简体中文, 日本語, Español, Français, Deutsch, Русский, and Português**.
 
 ## Installation
 
@@ -52,7 +61,7 @@ Search for **`dsh-t3-inbox`** in `dshmarket` or the Harness **Plugins → Discov
 dsh plugin add dsh-t3-inbox
 ```
 
-If you target a non-default profile:
+For a specific profile:
 
 ```sh
 dsh plugin --profile <profile> add dsh-t3-inbox
@@ -60,7 +69,7 @@ dsh plugin --profile <profile> add dsh-t3-inbox
 
 Restart DeepSeek Harness after installation.
 
-> **Non-invasive & Reversible:** You can switch seamlessly between **Inbox View** and native **Workspaces View** from **Settings → T3 Inbox** (or from the view switch icon when Global panels are in the top strip / overflow menu) without losing any sessions or saved preferences.
+> **Non-invasive & Reversible:** Prefer the original layout? Flip back to native **Workspaces View** anytime from **Settings → Inbox** (or via the view-switch icon when Global panels are placed at the top) without losing any sessions or settings.
 
 ## Keyboard Shortcuts
 
@@ -75,30 +84,30 @@ Restart DeepSeek Harness after installation.
 | Batch select cards / projects | `⌘+Click` / `⇧+Click` | `Ctrl+Click` / `Shift+Click` | Range or toggle selection |
 | Navigate & clear search/menus | `↑` `↓` `←` `→` `Esc` | `↑` `↓` `←` `→` `Esc` | Full ARIA keyboard support |
 
-## Settings (`Settings → T3 Inbox`)
+## Settings (`Settings → Inbox`)
 
-Open **Settings** from the gear button at the lower left of Inbox View, then choose **T3 Inbox**:
+Open **Settings** from the gear button at the lower left of Inbox View, then choose **Inbox**:
 
 - **Sidebar view**: Switch between **Inbox View** and native **Workspaces View** at any time.
 - **Appearance & layout** *(shown in Inbox View)*:
-  - **Background**: `Auto (default)` (uses T3 `#fafafa` / `#000000` on the native DSH theme and automatically follows third-party skins), `T3 colors`, `DSH theme`, or `Custom` light/dark color pickers.
+  - **Background**: `Auto (default)` (T3 `#fafafa` / `#000000` on the native DSH theme, automatically following third-party skins), `T3 colors`, `DSH theme`, or `Custom` light/dark color pickers.
   - **Global panels**: Choose `Footer (Default)` (next to Settings, up to 3 icons + More menu), `Top`, or `Hidden`.
 - **Inbox behavior** *(shown in Inbox View)*:
-  - **Working section**: Fold running/waiting threads into a collapsible **Working** shelf (turns back to Active once an unread completion arrives).
+  - **Working section**: Fold running/waiting threads into a collapsible **Working** shelf (returns to Active automatically when an unread completion arrives).
   - **Snooze shortcuts**: Add, edit, reorder, or reset up to 8 quick-snooze presets with live wake-time previews.
   - **Time format**: `System default`, `12-hour`, or `24-hour` for Snooze menu wake times.
 
-All preferences persist across restarts per profile.
+All preferences persist locally per profile across restarts.
 
 ## Compatibility & Known Limitations
 
-- **Host requirement**: `dsh >= 0.2.2-rc.1` (developed and verified against DeepSeek Harness `0.2.2-rc.3`).
+- **Host requirement**: `dsh >= 0.2.2-rc.1` (verified on DeepSeek Harness `0.2.2-rc.5` and configured for `0.2.x` prerelease ranges).
 - **Sidebar shell CSS coupling**: Seamless wide-mode shell styling targets the current `@deepseek-ai/dsh-client-ui-sidebar` layout classes (`kB3qhq_*`). Major upstream host sidebar redesigns may require plugin updates; switching to **Workspaces View** always restores the unmodified native UI.
 - **Scope notes**:
   - `capabilities.awaitedWork` is `false`; live running status uses native Host runtime/queue signals.
   - Large-scale `1000`-root / `200`-member projections are verified via synthetic benchmarks rather than production telemetry.
 
-## Development
+## Development & Architecture
 
 ```sh
 git clone https://github.com/tungloong/dsh-t3-inbox.git
@@ -109,7 +118,9 @@ npm run check
 npm audit --omit=dev
 ```
 
-### Architecture
+### Architecture & Reliability
+
+Built for responsiveness and state safety under concurrent sessions: **O(1) incremental Host refreshes**, **optimistic Client updates with automatic failure rollback**, **HMAC-signed `writeContext` tokens**, **revision CAS + idempotent operation IDs**, and **order-preserving batch mutations**.
 
 - `index.js`: Host service (`T3InboxService`), progress projection, bounded child-tree aggregation (`concurrency = 2`), persistent attention domain, HMAC-signed `writeContext`, CAS actions, and conditional Undo.
 - `lib/model.js`: Pure progress fold, attention state classification, return sorting, ranked search, drag projection, and candidate selection.
@@ -119,12 +130,12 @@ npm audit --omit=dev
 - `typert.js`: Strict Typert Host contribution (`unary` + `stream`).
 - `client.js`: Browser Remote mount, stream lifecycle, sidebar React UI, native context menus, keyboard shortcuts, tooltips, and Settings integration.
 - `locale/*.json`: Localized manifest metadata across 8 languages.
-- `test/`: Unit, protocol, DOM/React (`jsdom`, strict `512MB` heap cap), and concurrency tests (`154` tests total).
+- `test/`: Unit, protocol, DOM/React (`jsdom`, strict `512MB` heap cap), and concurrency tests (`160` tests total).
 
-## Acknowledgments
+## Related Projects
 
-- Inspired by the sidebar design and attention-inbox workflow of [T3 Code](https://github.com/pingdotgg/t3code).
-- Built for [DeepSeek Harness](https://github.com/deepseek-ai).
+- [T3 Code](https://github.com/pingdotgg/t3code) — inspiration for the sidebar visual design and attention-inbox workflow.
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) — the host application and plugin ecosystem this plugin is built for.
 
 ## License
 

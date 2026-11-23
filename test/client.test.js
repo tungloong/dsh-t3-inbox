@@ -510,7 +510,7 @@ function enTranslator(env) {
   };
 }
 
-test('left footer gear opens general Settings while T3 Inbox settings manages sidebar appearance and panel visibility', async () => {
+test('left footer gear opens general Settings while Inbox settings manages sidebar appearance and panel visibility', async () => {
   const env = await clientHarness(['a'],{render:true});
   const previousAct = globalThis.IS_REACT_ACT_ENVIRONMENT;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -532,18 +532,23 @@ test('left footer gear opens general Settings while T3 Inbox settings manages si
   try {
     const entry = env.registrations.find(({options}) => options.name === 'settings.section');
     const iconEntry = env.registrations.find(({options}) => options.name === 'settings.section.icon');
-    assert.equal(entry.options.label,'T3 Inbox');
+    assert.equal(typeof entry.options.label,'function');
+    assert.equal(entry.options.label(),'收件箱');
+    env.locale.set({active:'en'});
+    assert.equal(entry.options.label(),'Inbox');
     assert.equal(iconEntry?.options.id,entry.options.id);
     mounted = await mountBrowser(env,{t:enTranslator(env)});
     await act(async () => {
       env.runtime.noteWide(true);
       settingsRoot.render(React.createElement(React.Fragment,null,
         React.createElement(iconEntry.component,{size:16,active:true}),
-        React.createElement(entry.component,{inbox:env.runtime})));
+        React.createElement(entry.component,{inbox:env.runtime,t:enTranslator(env)})));
     });
     const navSvg = settingsHost.querySelector('svg.t3i-settings-nav-icon');
     assert.equal(navSvg?.getAttribute('width'),'16');
     assert.equal(navSvg?.getAttribute('height'),'16');
+    assert.equal(settingsHost.querySelector('.t3i-settings-title')?.textContent,'Inbox');
+    assert.equal(settingsHost.querySelector('.t3i-settings-subtitle')?.textContent,'dsh-t3-inbox');
     const footer = (label) => mounted.container.querySelector(`.t3i-foot button[aria-label="${label}"]`);
     const control = (label) => [...settingsHost.querySelectorAll('label')].find((el) => el.textContent === label).control;
     const change = async (input,value) => {
@@ -557,8 +562,9 @@ test('left footer gear opens general Settings while T3 Inbox settings manages si
     const gear = footer('Settings');
     assert.equal(Boolean(gear),true);
     assert.equal(mounted.container.querySelector('.t3i-foot').firstElementChild === gear,true);
-    assert.equal(footer('Panel menu'),null);
-    assert.equal(footer('T3 Inbox settings'),null);
+    assert.equal(Boolean(footer('Panel menu')),false);
+    assert.equal(Boolean(footer('Inbox settings')),false);
+    assert.equal(Boolean(footer('T3 Inbox settings')),false);
     await act(async () => { gear.click(); });
     assert.deepEqual(env.openedSettings,['default']);
     assert.equal(shell.dataset.t3InboxBackground,'t3');
@@ -5054,7 +5060,7 @@ test('Chinese i18n parity aligns T3 terminology, relative times, working elapsed
     // Verify 1:1 key parity and zero unintended English leftovers in zh dictionary.
     assert.deepEqual(Object.keys(env.dictionaries.zh).sort(), Object.keys(env.dictionaries.en).sort());
     for (const [key, val] of Object.entries(env.dictionaries.zh)) {
-      const stripped = String(val).replace(/\{[a-zA-Z]+\}/g, '').replace(/\b(T3 Inbox|T3|DSH|Shift)\b/g, '');
+      const stripped = String(val).replace(/\{[a-zA-Z]+\}/g, '').replace(/\b(T3|DSH|Shift)\b/g, '');
       assert.doesNotMatch(stripped, /[A-Za-z]{4,}/, `zh.${key} must not contain leftover English: ${val}`);
     }
 
@@ -5213,7 +5219,7 @@ test('all 8 official DSH locales register symmetrically with T3 plurals, status 
       }
       if (lang === 'zh' || lang === 'ja' || lang === 'ru') {
         for (const key of enKeys) {
-          const stripped = String(dict[key]).replace(/\{\w+\}/g, '').replace(/\b(T3 Inbox|T3|DSH|Shift)\b/g, '');
+          const stripped = String(dict[key]).replace(/\{\w+\}/g, '').replace(/\b(T3|DSH|Shift)\b/g, '');
           assert.doesNotMatch(stripped, /[A-Za-z]{4,}/, `${lang}.${key} contains unexpected English text: ${dict[key]}`);
         }
       }
@@ -6103,6 +6109,527 @@ test('footer global panels render host icons, filter own switch, toggle active p
     if (prevGetComputedStyle) Object.defineProperty(globalThis, 'getComputedStyle', prevGetComputedStyle);
     else delete globalThis.getComputedStyle;
     hostSidebar.remove();
+    if (mounted) await act(async () => { mounted.root.unmount(); });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
+    env.dispose();
+  }
+});
+
+test('Clearing Active above bottom shelves renders no Inbox zero prompt (T3 parity), and batch Undo restores all threads optimistically in parallel without false stale errors', async () => {
+  const env = await clientHarness(['a1', 'w1', 's1'], { render: true, storage: true });
+  const oldActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounted;
+  try {
+    env.host.running.add('w1');
+    await env.host.refresh();
+    env.emitSnapshot(env.host.currentSnapshot);
+
+    env.runtime.locale = () => 'en-US';
+    mounted = await mountBrowser(env, {
+      t: enTranslator(env),
+      useWorkspaces: (select) => {
+        const cur = React.useSyncExternalStore(env.workspaces.subscribe, env.workspaces.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+      useSessions: (select) => {
+        const cur = React.useSyncExternalStore(env.sessions.subscribe, env.sessions.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+    });
+
+    await act(async () => { await settle(env.runtime, 's1'); });
+    await act(async () => { await settle(env.runtime, 'a1'); });
+
+    // No Inbox zero banner above bottom shelves (T3 renders clean empty space).
+    assert.equal(Boolean(mounted.container.querySelector('.t3i-inbox-zero')), false);
+    assert.equal(Boolean(mounted.container.querySelector('[data-inbox-zero]')), false);
+    assert.equal(Boolean(mounted.container.querySelector('.t3i-empty-contextual')), false);
+    assert.equal(mounted.container.querySelector('[data-section-header="working"]')?.getAttribute('data-bottom-anchor'), 'true');
+  } finally {
+    if (mounted) await act(async () => { mounted.root.unmount(); });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
+    env.dispose();
+  }
+
+  // Parallel + optimistic batch Undo & out-of-order snapshot regression guard.
+  const ids = ['t1', 't2', 't3', 't4', 't5', 't6'];
+  const batchEnv = await clientHarness(ids, { render: true, shortcuts: true, storage: true });
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let batchMounted;
+  try {
+    await batchEnv.host.refresh();
+    batchEnv.emitSnapshot(batchEnv.host.currentSnapshot);
+    batchMounted = await mountBrowser(batchEnv, {
+      t: enTranslator(batchEnv),
+      useWorkspaces: (select) => {
+        const cur = React.useSyncExternalStore(batchEnv.workspaces.subscribe, batchEnv.workspaces.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+      useSessions: (select) => {
+        const cur = React.useSyncExternalStore(batchEnv.sessions.subscribe, batchEnv.sessions.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+    });
+
+    // Delayed in-flight syncSnapshot returning an older revision after a newer stream snapshot arrived must not regress remote state.
+    const latestSnap = structuredClone(batchEnv.runtime.store.getSnapshot().remote);
+    const staleReply = structuredClone(latestSnap);
+    staleReply.cards = [];
+    const newerSnap = structuredClone(latestSnap);
+    newerSnap.revision = (latestSnap.revision ?? 0) + 1;
+
+    const origSnapshotRemote = batchEnv.remote.snapshot.bind(batchEnv.remote);
+    let releaseStaleSync;
+    batchEnv.remote.snapshot = async () => {
+      await new Promise((resolve) => { releaseStaleSync = resolve; });
+      return { ok: true, value: staleReply };
+    };
+    const delayedSyncPromise = batchEnv.runtime.syncSnapshot();
+    for (let i = 0; i < 6 && !releaseStaleSync; i++) await new Promise((resolve) => setImmediate(resolve));
+    await act(async () => {
+      batchEnv.emitSnapshot(newerSnap);
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    await act(async () => {
+      releaseStaleSync();
+      await delayedSyncPromise;
+    });
+    assert.equal(batchEnv.runtime.store.getSnapshot().remote.revision, newerSnap.revision);
+    assert.equal(batchEnv.runtime.store.getSnapshot().remote.cards.length, ids.length);
+
+    let snapshotSyncCount = 0;
+    batchEnv.remote.snapshot = async (req, signal) => {
+      snapshotSyncCount += 1;
+      return origSnapshotRemote(req, signal);
+    };
+
+    const cards = ids.map((id) => batchEnv.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id));
+    await act(async () => { await batchEnv.runtime.actMany(cards, 'settle'); });
+    assert.ok(snapshotSyncCount <= 1, `expected at most 1 batch snapshot sync after actMany, saw ${snapshotSyncCount}`);
+    assert.equal(batchMounted.container.querySelector('.t3i-foot-undo-text')?.textContent, 'Settled 6,');
+    for (const id of ids) {
+      assert.equal(Boolean(batchMounted.container.querySelector(`.t3i-item[data-session-id="${id}"][data-variant="card"]`)), false);
+    }
+    assert.equal(batchMounted.container.querySelector('.t3i-item[data-session-id="t1"]')?.getAttribute('data-variant'), 'compact');
+    assert.equal(batchMounted.container.querySelector('.t3i-item[data-session-id="t1"]')?.getAttribute('data-section'), 'settled');
+
+    // Track Host refreshSessionCard + RPC concurrency while holding undo RPCs in-flight.
+    let refreshCallsDuringUndo = 0;
+    const origRefreshCard = batchEnv.host.refreshSessionCard.bind(batchEnv.host);
+    batchEnv.host.refreshSessionCard = async (sessionId, signal) => {
+      refreshCallsDuringUndo += 1;
+      return origRefreshCard(sessionId, signal);
+    };
+
+    const releaseBySession = new Map();
+    const origActRemote = batchEnv.remote.act.bind(batchEnv.remote);
+    batchEnv.remote.act = async (req, signal) => {
+      if (req.kind === 'undo') {
+        await new Promise((resolve) => { releaseBySession.set(req.sessionId, resolve); });
+      }
+      return origActRemote(req, signal);
+    };
+
+    snapshotSyncCount = 0;
+    const undoBanner = batchEnv.runtime.store.getSnapshot().undo;
+    let undoPromise;
+    await act(async () => {
+      undoPromise = batchEnv.runtime.undo(undoBanner);
+      for (let i = 0; i < 6 && releaseBySession.size < ids.length; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    });
+
+    // All 6 Undo RPCs must be in-flight simultaneously AND all 6 cards optimistically visible in Active immediately.
+    assert.equal(releaseBySession.size, ids.length);
+    for (const id of ids) {
+      assert.equal(Boolean(batchMounted.container.querySelector(`.t3i-item[data-session-id="${id}"][data-variant="card"][data-section="active"]`)), true);
+    }
+
+    let releasePostUndoSync;
+    batchEnv.remote.snapshot = async (req, signal) => {
+      snapshotSyncCount += 1;
+      if (snapshotSyncCount === 1) {
+        await new Promise((resolve) => { releasePostUndoSync = resolve; });
+      }
+      return origSnapshotRemote(req, signal);
+    };
+
+    await act(async () => {
+      for (const release of [...releaseBySession.values()].reverse()) release();
+      for (let i = 0; i < 10 && !releasePostUndoSync; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    });
+
+    // While post-undo snapshot sync is still in-flight, pendingActions keeps follow-up settle from racing old revisions.
+    if (releasePostUndoSync) {
+      for (const id of ids) {
+        assert.equal(batchEnv.runtime.store.getSnapshot().pendingActions[id], 1);
+      }
+      await act(async () => {
+        releasePostUndoSync();
+        await undoPromise;
+      });
+    } else {
+      await act(async () => { await undoPromise; });
+    }
+
+    assert.equal(refreshCallsDuringUndo, 0);
+    assert.ok(snapshotSyncCount <= 1, `expected at most 1 batch snapshot sync after undo, saw ${snapshotSyncCount}`);
+    assert.equal(batchEnv.runtime.store.getSnapshot().errorToast, null);
+    assert.deepEqual(batchEnv.runtime.store.getSnapshot().pendingActions, {});
+    assert.deepEqual(batchEnv.runtime.store.getSnapshot().optimisticCards, {});
+    for (const id of ids) {
+      assert.equal(batchEnv.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id)?.section, 'active');
+      assert.equal(Boolean(batchMounted.container.querySelector(`.t3i-item[data-session-id="${id}"][data-variant="card"][data-section="active"]`)), true);
+    }
+
+    // Immediate re-batch-settle (批量收尾 -> undo -> 再批量收尾) succeeds with fresh post-undo revisions and zero stale errors.
+    batchEnv.remote.snapshot = origSnapshotRemote;
+    const reCards = ids.map((id) => batchEnv.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id));
+    await act(async () => { await batchEnv.runtime.actMany(reCards, 'settle'); });
+    assert.equal(batchEnv.runtime.store.getSnapshot().errorToast, null);
+    for (const id of ids) {
+      assert.equal(batchEnv.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id)?.section, 'settled');
+    }
+  } finally {
+    if (batchMounted) await act(async () => { batchMounted.root.unmount(); });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
+    batchEnv.dispose();
+  }
+});
+
+test('batch settle/restore preserve display order across out-of-order Host commits, and batch undo preserves before.unsettledAt optimistically', async () => {
+  const orderedIds = ['s1', 's3', 's2', 's4'];
+  const baseTime = Date.now() - 120_000;
+  const activityOffsetById = { s2: 80_000, s4: 60_000, s3: 40_000, s1: 20_000 };
+  const env = await clientHarness(['s1', 's2', 's3', 's4'], { render: true, storage: true });
+  const oldActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounted;
+  try {
+    env.host.readMember = async (id) => {
+      const time = baseTime + activityOffsetById[id];
+      let state = initialProgress(0, id);
+      state = foldProgress(state, { type: 'turn/start', seq: 9, time: time - 1, data: { turn: 1 } });
+      state = foldProgress(state, { type: 'turn/end', seq: 10, time, data: { turn: 1, reason: { kind: 'completed' } } });
+      return { sessionId: id, label: id, progress: state, runtime: { running: false, queue: [], completeness: 'complete' }, pendingInput: [] };
+    };
+    await env.host.refresh();
+    for (const id of ['s1', 's2', 's3', 's4']) {
+      await env.table.update(id, (record) => ({ ...record, settledThrough: {}, settledAt: null, unsettledAt: null }));
+    }
+    await env.host.refresh();
+    env.emitSnapshot(env.host.currentSnapshot);
+
+    env.runtime.locale = () => 'en-US';
+    mounted = await mountBrowser(env, {
+      t: enTranslator(env),
+      useWorkspaces: (select) => {
+        const cur = React.useSyncExternalStore(env.workspaces.subscribe, env.workspaces.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+      useSessions: (select) => {
+        const cur = React.useSyncExternalStore(env.sessions.subscribe, env.sessions.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+    });
+    await act(async () => { env.runtime.store.set({ settledOpen: true }); });
+
+    const domIds = (section) => [...mounted.container.querySelectorAll(`.t3i-item[data-section="${section}"]`)].map((el) => el.getAttribute('data-session-id'));
+
+    // Give s3 then s1 explicit higher unsettledAt via normal settle -> restore so pre-settle Active order is [s1, s3, s2, s4]
+    // even though s1 and s3 have older message activity times than s2 and s4.
+    for (const [id, at] of [['s3', baseTime + 95_000], ['s1', baseTime + 100_000]]) {
+      const cardNow = () => env.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id);
+      await act(async () => { await env.runtime.act(cardNow(), 'settle'); });
+      await act(async () => { await env.runtime.act(cardNow(), 'restore', { at }); });
+    }
+    assert.deepEqual(domIds('active'), orderedIds);
+    const expectedS1UnsettledAt = env.table.get('s1').unsettledAt;
+    const expectedS3UnsettledAt = env.table.get('s3').unsettledAt;
+    assert.ok(expectedS1UnsettledAt > expectedS3UnsettledAt);
+
+    // 1. Batch settle with inverted Host async completion order (s4/s2 commit immediately, s3/s1 finish last).
+    const origActRemote = env.remote.act.bind(env.remote);
+    const holdSettle = new Map();
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'settle' && (req.sessionId === 's1' || req.sessionId === 's3')) {
+        await new Promise((resolve) => { holdSettle.set(req.sessionId, resolve); });
+      }
+      return origActRemote(req, signal);
+    };
+
+    const cardsForSettle = orderedIds.map((id) => env.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id));
+    let settlePromise;
+    await act(async () => {
+      settlePromise = env.runtime.actMany(cardsForSettle, 'settle');
+      for (let i = 0; i < 6 && holdSettle.size < 2; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    });
+    // Mid-flight: s4 & s2 committed first while s1 & s3 are still optimistic -> Settled DOM order must already match [s1, s3, s2, s4].
+    assert.equal(holdSettle.size, 2);
+    assert.deepEqual(domIds('settled'), orderedIds);
+
+    await act(async () => {
+      holdSettle.get('s3')();
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.deepEqual(domIds('settled'), orderedIds);
+
+    await act(async () => {
+      holdSettle.get('s1')();
+      await settlePromise;
+    });
+    assert.deepEqual(domIds('settled'), orderedIds);
+    const settledTimes = orderedIds.map((id) => env.table.get(id).settledAt);
+    assert.ok(settledTimes[0] > settledTimes[1] && settledTimes[1] > settledTimes[2] && settledTimes[2] > settledTimes[3]);
+
+    // 2. Batch undo with held RPCs: s1 & s3 must retain before.unsettledAt optimistically at t=0 (no sink/bounce).
+    const holdUndo = new Map();
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'undo') {
+        await new Promise((resolve) => { holdUndo.set(req.sessionId, resolve); });
+      }
+      return origActRemote(req, signal);
+    };
+    const undoNotice = env.runtime.store.getSnapshot().undo;
+    let undoPromise;
+    await act(async () => {
+      undoPromise = env.runtime.undo(undoNotice);
+      for (let i = 0; i < 6 && holdUndo.size < orderedIds.length; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    });
+    assert.equal(holdUndo.size, orderedIds.length);
+    assert.deepEqual(domIds('active'), orderedIds);
+
+    await act(async () => {
+      for (const id of ['s4', 's2', 's1', 's3']) holdUndo.get(id)?.();
+      await undoPromise;
+    });
+    assert.deepEqual(domIds('active'), orderedIds);
+    assert.equal(env.table.get('s1').unsettledAt, expectedS1UnsettledAt);
+    assert.equal(env.table.get('s3').unsettledAt, expectedS3UnsettledAt);
+    assert.equal(env.table.get('s2').unsettledAt, null);
+    assert.equal(env.table.get('s4').unsettledAt, null);
+
+    // 3. Batch restore (Settled -> Active) with inverted async completion also keeps [s1, s3, s2, s4] end-to-end.
+    env.remote.act = origActRemote;
+    const reSettleCards = orderedIds.map((id) => env.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id));
+    await act(async () => { await env.runtime.actMany(reSettleCards, 'settle'); });
+    assert.deepEqual(domIds('settled'), orderedIds);
+
+    const holdRestore = new Map();
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'restore' && (req.sessionId === 's1' || req.sessionId === 's3')) {
+        await new Promise((resolve) => { holdRestore.set(req.sessionId, resolve); });
+      }
+      return origActRemote(req, signal);
+    };
+    const settledCards = orderedIds.map((id) => env.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id));
+    let restorePromise;
+    await act(async () => {
+      restorePromise = env.runtime.actMany(settledCards, 'restore');
+      for (let i = 0; i < 6 && holdRestore.size < 2; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    });
+    assert.deepEqual(domIds('active'), orderedIds);
+
+    await act(async () => {
+      holdRestore.get('s3')();
+      holdRestore.get('s1')();
+      await restorePromise;
+    });
+    assert.deepEqual(domIds('active'), orderedIds);
+    const restoredTimes = orderedIds.map((id) => env.table.get(id).unsettledAt);
+    assert.ok(restoredTimes[0] > restoredTimes[1] && restoredTimes[1] > restoredTimes[2] && restoredTimes[2] > restoredTimes[3]);
+  } finally {
+    if (mounted) await act(async () => { mounted.root.unmount(); });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
+    env.dispose();
+  }
+});
+
+test('batch review regressions: same-session undo, syncSnapshot failure tolerance, non-active undo fidelity, partial failure rollback, and stale stream guard', async () => {
+  const env = await clientHarness(['a1', 'a2', 'z1', 'st1'], { render: true, storage: true });
+  const oldActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounted;
+  try {
+    await env.host.refresh();
+    env.emitSnapshot(env.host.currentSnapshot);
+    env.runtime.locale = () => 'en-US';
+    mounted = await mountBrowser(env, {
+      t: enTranslator(env),
+      useWorkspaces: (select) => {
+        const cur = React.useSyncExternalStore(env.workspaces.subscribe, env.workspaces.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+      useSessions: (select) => {
+        const cur = React.useSyncExternalStore(env.sessions.subscribe, env.sessions.getSnapshot);
+        return select ? select(cur) : cur;
+      },
+    });
+    await act(async () => { env.runtime.store.set({ snoozedOpen: true, settledOpen: true }); });
+
+    const cardOf = (id) => env.runtime.store.getSnapshot().remote.cards.find((card) => card.sessionId === id);
+
+    // 1. Same-session consecutive Snooze 15m -> Snooze 3h replaces superseded receipt and undoes cleanly back to 15m without stale ErrorToast.
+    const until15m = new Date(Date.now() + 15 * 60_000).toISOString();
+    const until3h = new Date(Date.now() + 3 * 60 * 60_000).toISOString();
+    await act(async () => { await env.runtime.act(cardOf('z1'), 'snooze', { until: until15m }); });
+    await act(async () => { await env.runtime.act(cardOf('z1'), 'snooze', { until: until3h }); });
+    const snoozeNotice = env.runtime.store.getSnapshot().undo;
+    assert.equal(snoozeNotice?.count, 1);
+    await act(async () => { await env.runtime.undo(snoozeNotice); });
+    assert.equal(env.runtime.store.getSnapshot().errorToast, null);
+    assert.equal(cardOf('z1')?.section, 'snoozed');
+    assert.equal(cardOf('z1')?.snooze?.until, until15m);
+
+    // 2. Non-plain-Active optimistic Undo fidelity:
+    //    (a) Settle a Snoozed card (z1) -> held Undo optimistically renders in snoozed, not active.
+    //    (b) Snooze a Settled card (st1) -> held Undo optimistically renders in settled, not active.
+    const origActRemote = env.remote.act.bind(env.remote);
+    await act(async () => { await env.runtime.act(cardOf('z1'), 'settle'); });
+    const undoZ1Notice = env.runtime.store.getSnapshot().undo;
+    let releaseZ1Undo;
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'undo' && req.sessionId === 'z1') {
+        await new Promise((resolve) => { releaseZ1Undo = resolve; });
+      }
+      return origActRemote(req, signal);
+    };
+    let z1UndoPromise;
+    await act(async () => {
+      z1UndoPromise = env.runtime.undo(undoZ1Notice);
+      for (let i = 0; i < 6 && !releaseZ1Undo; i++) await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.equal(mounted.container.querySelector('.t3i-item[data-session-id="z1"]')?.getAttribute('data-section'), 'snoozed');
+    await act(async () => { releaseZ1Undo(); await z1UndoPromise; });
+    assert.equal(cardOf('z1')?.section, 'snoozed');
+
+    env.remote.act = origActRemote;
+    await act(async () => { await env.runtime.act(cardOf('st1'), 'settle'); });
+    assert.equal(cardOf('st1')?.section, 'settled');
+    await act(async () => { await env.runtime.act(cardOf('st1'), 'snooze', { until: until15m }); });
+    const undoSt1Notice = env.runtime.store.getSnapshot().undo;
+    let releaseSt1Undo;
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'undo' && req.sessionId === 'st1') {
+        await new Promise((resolve) => { releaseSt1Undo = resolve; });
+      }
+      return origActRemote(req, signal);
+    };
+    let st1UndoPromise;
+    await act(async () => {
+      st1UndoPromise = env.runtime.undo(undoSt1Notice);
+      for (let i = 0; i < 6 && !releaseSt1Undo; i++) await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.equal(mounted.container.querySelector('.t3i-item[data-session-id="st1"]')?.getAttribute('data-section'), 'settled');
+    await act(async () => { releaseSt1Undo(); await st1UndoPromise; });
+    assert.equal(cardOf('st1')?.section, 'settled');
+
+    // 3. Partial batch failure immediately rolls back the failed card's optimistic patch while sibling RPC is still held.
+    let releaseA2;
+    env.remote.act = async (req, signal) => {
+      if (req.kind === 'settle' && req.sessionId === 'a1') {
+        return { ok: true, value: { status: 'not-eligible', operationId: req.operationId, revision: req.revision, effect: null, message: 'blocked' } };
+      }
+      if (req.kind === 'settle' && req.sessionId === 'a2') {
+        await new Promise((resolve) => { releaseA2 = resolve; });
+      }
+      return origActRemote(req, signal);
+    };
+    let partialPromise;
+    await act(async () => {
+      partialPromise = env.runtime.actMany([cardOf('a1'), cardOf('a2')], 'settle');
+      for (let i = 0; i < 6 && !releaseA2; i++) await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.equal(Boolean(env.runtime.store.getSnapshot().pendingActions.a1), false);
+    assert.equal(Boolean(env.runtime.store.getSnapshot().optimisticCards?.a1), false);
+    assert.equal(mounted.container.querySelector('.t3i-item[data-session-id="a1"]')?.getAttribute('data-section'), 'active');
+    assert.equal(mounted.container.querySelector('.t3i-item[data-session-id="a2"]')?.getAttribute('data-section'), 'settled');
+    await act(async () => { releaseA2(); await partialPromise; });
+    env.remote.act = origActRemote;
+    await act(async () => { await env.runtime.act(cardOf('a2'), 'restore'); });
+    await act(async () => { env.runtime.dismissError(); });
+
+    // 4. syncSnapshot() throwing after committed actMany/undo does not drop Undo receipts, skip origin restore, or reject unhandled.
+    const origSnapshotRemote = env.remote.snapshot.bind(env.remote);
+    env.remote.snapshot = async () => ({ ok: false, error: new Error('snapshot unavailable') });
+    await act(async () => { await env.runtime.actMany([cardOf('a1'), cardOf('a2')], 'settle'); });
+    const afterFailedSyncUndo = env.runtime.store.getSnapshot().undo;
+    assert.equal(afterFailedSyncUndo?.count, 2);
+    assert.equal(mounted.container.querySelector('.t3i-foot-undo-text')?.textContent, 'Settled 2,');
+
+    // Sync settled revisions once, then fail snapshot again during undo to verify undo tolerates syncSnapshot failure.
+    env.remote.snapshot = origSnapshotRemote;
+    await act(async () => { await env.runtime.syncSnapshot(); });
+    env.remote.snapshot = async () => ({ ok: false, error: new Error('snapshot unavailable') });
+    await act(async () => {
+      env.runtime.store.set({ navigationOwner: { operationId: afterFailedSyncUndo.items[0].operationId, origin: 'a1' } });
+    });
+    const opened = [];
+    const origOpen = env.runtime.openSession;
+    env.runtime.openSession = (id) => { opened.push(id); };
+    await act(async () => { await env.runtime.undo(afterFailedSyncUndo); });
+    env.runtime.openSession = origOpen;
+    env.remote.snapshot = origSnapshotRemote;
+    assert.deepEqual(opened, ['a1']);
+
+    // 5. Buffered older follow stream frame after a newer snapshot must not regress store.remote.
+    const currentSnap = structuredClone(env.runtime.store.getSnapshot().remote);
+    const newerStreamSnap = structuredClone(currentSnap);
+    newerStreamSnap.revision = (currentSnap.revision ?? 0) + 2;
+    const staleStreamSnap = structuredClone(currentSnap);
+    staleStreamSnap.revision = (currentSnap.revision ?? 0) + 1;
+    staleStreamSnap.cards = [];
+    await act(async () => {
+      env.emitSnapshot(newerStreamSnap);
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    await act(async () => {
+      env.emitSnapshot(staleStreamSnap);
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.equal(env.runtime.store.getSnapshot().remote.revision, newerStreamSnap.revision);
+    assert.equal(env.runtime.store.getSnapshot().remote.cards.length, currentSnap.cards.length);
+
+    // 6. Multi-item same-session undo group passes skipSync/deferClearPending only on the final step so intermediate steps never self-block.
+    const recordedCalls = [];
+    const origRuntimeAct = env.runtime.act;
+    env.runtime.act = async (cardArg, kindArg, extraArg) => {
+      if (kindArg === 'undo') {
+        recordedCalls.push({
+          sessionId: cardArg.sessionId,
+          targetOperationId: extraArg.targetOperationId,
+          skipSync: Boolean(extraArg.skipSync),
+          deferClearPending: Boolean(extraArg.deferClearPending),
+        });
+        return { committed: true, revision: (cardArg.revision ?? 0) + 1 };
+      }
+      return origRuntimeAct(cardArg, kindArg, extraArg);
+    };
+    await act(async () => {
+      await env.runtime.undo({
+        id: 'multi-same-session',
+        items: [
+          { id: 'step-1', operationId: 'op-step-1', sessionId: 'a1', kind: 'snooze', expiresAt: Date.now() + 5000 },
+          { id: 'step-2', operationId: 'op-step-2', sessionId: 'a1', kind: 'snooze', expiresAt: Date.now() + 5000 },
+        ],
+      });
+    });
+    env.runtime.act = origRuntimeAct;
+    assert.deepEqual(recordedCalls, [
+      { sessionId: 'a1', targetOperationId: 'op-step-2', skipSync: false, deferClearPending: false },
+      { sessionId: 'a1', targetOperationId: 'op-step-1', skipSync: true, deferClearPending: true },
+    ]);
+  } finally {
     if (mounted) await act(async () => { mounted.root.unmount(); });
     globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
     env.dispose();

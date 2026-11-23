@@ -17,6 +17,9 @@ test('Host Typert manifest exposes strict unary and stream contracts', () => {
   const act = TYPERT.invocations.find((item) => item.method === 'act');
   assert.equal(act.invocation.kind, 'direct');
   assert.doesNotThrow(() => act.input({ strict: true }).create().parse({ request: validAction }));
+  assert.doesNotThrow(() => act.input({ strict: true }).create().parse({ request: { ...validAction, at: 1_700_000_000_000 } }));
+  assert.throws(() => act.input({ strict: true }).create().parse({ request: { ...validAction, at: 0 } }));
+  assert.throws(() => act.input({ strict: true }).create().parse({ request: { ...validAction, at: 1.5 } }));
   assert.throws(() => act.input({ strict: true }).create().parse({ request: { ...validAction, unexpected: true } }));
   assert.throws(() => act.input().create().parse({ request: { ...validAction, unexpected: true } }));
   const prepare = TYPERT.invocations.find((item) => item.method === 'prepare');
@@ -54,6 +57,8 @@ test('Client mount receives strict descriptors before any view effect runs', asy
     assert.equal(descriptor.cancellation.parameter, 'signal');
   }
   const act = mounted.descriptors.find((item) => item.method === 'act');
+  assert.doesNotThrow(() => act.parameters[0].codec.create().parse({ ...validAction, at: 1_700_000_000_000 }));
+  assert.throws(() => act.parameters[0].codec.create().parse({ ...validAction, at: -1 }));
   assert.throws(() => act.parameters[0].codec.create().parse({ ...validAction, extra: true }));
   delete globalThis.window;
   if (localStorageDescriptor) Object.defineProperty(globalThis, 'localStorage', localStorageDescriptor);

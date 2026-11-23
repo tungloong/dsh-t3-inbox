@@ -17,6 +17,7 @@ const settingsRecord = z.strictObject({revision:z.number().int().nonnegative(),p
 const PROJECTION_KEY = 't3' + 'Inbox' + 'Progress';
 const CONTEXT_TTL = 10 * 60 * 1000;
 const UNDO_TTL = 5 * 1000;
+const UNDO_GRACE_MS = 2500;
 const MAX_TREE = 256;
 const MAX_CONTEXT_LENGTH = 100_000;
 const EMPTY_SNAPSHOT = {
@@ -809,8 +810,12 @@ export default class T3InboxService extends TypertRemoteService {
   async act(request, signal) {
     this.requireOwner();
     if (signal?.aborted) throw new RemoteError('gateway/cancelled', 'Inbox operation was cancelled', {});
-    await this.refreshSessionCard(request.sessionId, signal);
-    if (signal?.aborted) throw new RemoteError('gateway/cancelled', 'Inbox operation was cancelled', {});
+    const hasSnapshotCard = this.currentSnapshot?.phase === 'ready'
+      && this.currentSnapshot.cards?.some((item) => item.sessionId === request.sessionId);
+    if (request.kind !== 'undo' || !hasSnapshotCard) {
+      await this.refreshSessionCard(request.sessionId, signal);
+      if (signal?.aborted) throw new RemoteError('gateway/cancelled', 'Inbox operation was cancelled', {});
+    }
     const table = this.domain.table('records');
     const requestHash = hash(request);
     const existingMetadata = table.get(request.sessionId);
@@ -859,11 +864,13 @@ export default class T3InboxService extends TypertRemoteService {
       let snoozeState = current.snooze;
       let unreadAt = current.unreadAt ?? null;
       const now = Date.now();
+      const requestedAt = finiteEpochMs(request.at);
+      const mutationAt = requestedAt !== null && requestedAt <= 8_640_000_000_000_000 ? Math.trunc(requestedAt) : now;
       if (request.kind === 'settle') {
         if (!card.canSettle || !pointsAfter(card.members, context.results)) { outcome = { status: 'not-eligible', effect: null, message: 'Settle requires a complete idle tree' }; return current; }
-        settledThrough = clone(context.results); settledAt = now; settledOverride = 'settled'; unsettledAt = null; snoozeState = null;
+        settledThrough = clone(context.results); settledAt = mutationAt; settledOverride = 'settled'; unsettledAt = null; snoozeState = null;
       } else if (request.kind === 'restore') {
-        settledThrough = {}; settledAt = null; settledOverride = 'active'; unsettledAt = now; snoozeState = null;
+        settledThrough = {}; settledAt = null; settledOverride = 'active'; unsettledAt = mutationAt; snoozeState = null;
       } else if (request.kind === 'snooze') {
         const until = Date.parse(request.until ?? '');
         if (!card.canSnooze || !Number.isFinite(until) || until <= now) { outcome = { status: 'not-eligible', effect: null, message: 'Snooze requires a complete baseline, future time, and identified ordinary questions only' }; return current; }
@@ -889,7 +896,7 @@ export default class T3InboxService extends TypertRemoteService {
         unreadAt = null;
       } else if (request.kind === 'undo') {
         const target = current.operations.find((item) => item.id === request.targetOperationId);
-        if (!target || target.receipt.expiresAt <= now || target.receipt.revision !== current.revision) { outcome = { status: 'stale', effect: null, message: 'Undo is no longer valid' }; return current; }
+        if (!target || (target.receipt.expiresAt + UNDO_GRACE_MS) <= now || target.receipt.revision !== current.revision) { outcome = { status: 'stale', effect: null, message: 'Undo is no longer valid' }; return current; }
         ({ settledThrough, settledAt, settledOverride = null, unsettledAt = null, snooze: snoozeState, unreadAt } = clone(target.receipt.before));
       }
       const committedAt = Date.now();

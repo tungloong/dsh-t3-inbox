@@ -195,7 +195,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'New thread in…',
       newThreadInHint: 'New thread in current project: Shift+click',
       worktreeLabel: 'Worktree: {branch}',
-      inboxSettings: 'T3 Inbox settings',
+      inboxSettings: 'Inbox settings',
       settings: 'Settings',
       sidebarView: 'Sidebar view',
       sidebarBackground: 'Background',
@@ -449,7 +449,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: '在以下位置新建会话…',
       newThreadInHint: '在当前项目中新建会话：Shift+单击',
       worktreeLabel: '工作树：{branch}',
-      inboxSettings: 'T3 Inbox 设置',
+      inboxSettings: '收件箱设置',
       settings: '设置',
       sidebarView: '侧栏视图',
       sidebarBackground: '背景',
@@ -703,7 +703,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: '新しいスレッドの作成先...',
       newThreadInHint: '現在のプロジェクトで新しいスレッド: Shift+クリック',
       worktreeLabel: 'ワークツリー: {branch}',
-      inboxSettings: 'T3 Inbox 設定',
+      inboxSettings: '受信トレイ設定',
       settings: '設定',
       sidebarView: 'サイドバー表示',
       sidebarBackground: '背景',
@@ -957,7 +957,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'Nuevo hilo en...',
       newThreadInHint: 'Nuevo hilo en el proyecto actual: Shift+clic',
       worktreeLabel: 'Worktree: {branch}',
-      inboxSettings: 'Ajustes de T3 Inbox',
+      inboxSettings: 'Ajustes de la bandeja de entrada',
       settings: 'Ajustes',
       sidebarView: 'Vista de barra lateral',
       sidebarBackground: 'Fondo',
@@ -1211,7 +1211,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'Nouveau fil dans...',
       newThreadInHint: 'Nouveau fil dans le projet actuel : Shift+clic',
       worktreeLabel: 'Worktree : {branch}',
-      inboxSettings: 'Paramètres T3 Inbox',
+      inboxSettings: 'Paramètres de la boîte de réception',
       settings: 'Paramètres',
       sidebarView: 'Vue barre latérale',
       sidebarBackground: 'Arrière-plan',
@@ -1465,7 +1465,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'Neuer Thread in...',
       newThreadInHint: 'Neuer Thread im aktuellen Projekt: Shift+Klick',
       worktreeLabel: 'Worktree: {branch}',
-      inboxSettings: 'T3 Inbox-Einstellungen',
+      inboxSettings: 'Posteingang-Einstellungen',
       settings: 'Einstellungen',
       sidebarView: 'Seitenleisten-Ansicht',
       sidebarBackground: 'Hintergrund',
@@ -1719,7 +1719,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'Новый тред в...',
       newThreadInHint: 'Новый тред в текущем проекте: Shift+клик',
       worktreeLabel: 'Рабочее дерево: {branch}',
-      inboxSettings: 'Настройки T3 Inbox',
+      inboxSettings: 'Настройки входящих',
       settings: 'Настройки',
       sidebarView: 'Вид боковой панели',
       sidebarBackground: 'Фон',
@@ -1973,7 +1973,7 @@ window.__ModuleLoader__.load({
       newThreadInTitle: 'Nova thread em...',
       newThreadInHint: 'Nova thread no projeto atual: Shift+clique',
       worktreeLabel: 'Worktree: {branch}',
-      inboxSettings: 'Configurações do T3 Inbox',
+      inboxSettings: 'Configurações da caixa de entrada',
       settings: 'Configurações',
       sidebarView: 'Visualização da barra lateral',
       sidebarBackground: 'Fundo',
@@ -2059,6 +2059,9 @@ window.__ModuleLoader__.load({
       body[data-ds-dark-theme] .t3i-filter-popover, body[data-ds-dark-theme] .t3i-modal, body[data-ds-dark-theme] .t3i-new-menu { --t3i-accent:#346bf1; }
       .t3i-root *, .t3i-home * { box-sizing:border-box; }
       .t3i-settings { display:flex; flex-direction:column; color:var(--dsw-alias-label-primary); font:inherit; font-size:14px; }
+      .t3i-settings-head { display:flex; flex-direction:column; gap:2px; padding:0 0 18px; }
+      .t3i-settings-title { margin:0; font-size:18px; font-weight:600; line-height:24px; color:var(--dsw-alias-label-primary); }
+      .t3i-settings-subtitle { margin:0; font-size:13px; line-height:18px; color:var(--dsw-alias-label-tertiary, var(--dsw-alias-label-secondary)); }
       .t3i-settings [role="alert"] { color:var(--dsw-alias-state-error-primary, #c10007); margin:4px 0 8px; font-size:12px; }
       body[data-ds-dark-theme] .t3i-settings [role="alert"] { color:#f87171; }
       .t3i-settings-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:5px 0; }
@@ -2809,6 +2812,7 @@ window.__ModuleLoader__.load({
         revision:z.number().int().nonnegative(), context:z.string().min(1).max(100000),
         kind:z.enum(['settle','restore','snooze','wake','ack-woke','undo','mark-unread','clear-unread']),
         until:z.string().datetime().optional(), targetOperationId:z.string().min(8).max(128).optional(),
+        at:z.number().int().positive().max(8640000000000000).optional(),
       });
       await ctx.remote.$mount({ package:'dsh-t3-inbox', descriptors:[
         descriptor('snapshot',z.strictObject({}),z.json()),
@@ -5184,9 +5188,13 @@ window.__ModuleLoader__.load({
         return {label,whenLabel};
       }) : [];
       const differentDefaults = JSON.stringify(ids(options)) !== JSON.stringify(ids(defaultSnoozeOptions));
+      const header = h('header',{className:'t3i-settings-head'},
+        h('h2',{className:'t3i-settings-title'},t('inbox')),
+        h('p',{className:'t3i-settings-subtitle'},'dsh-t3-inbox'));
       const viewSetting = h(SidebarViewSetting,{mode:view.mode,runtime,t});
-      if (view.mode !== 'inbox') return h('div',{className:'t3i-settings'},viewSetting);
+      if (view.mode !== 'inbox') return h('div',{className:'t3i-settings'},header,viewSetting);
       return h('div',{className:'t3i-settings'},
+        header,
         viewSetting,
         h('section',{className:'t3i-settings-group','aria-labelledby':appearanceHeadingId},
           h('h3',{id:appearanceHeadingId,className:'t3i-settings-group-title'},t('settingsAppearanceSection')),
@@ -5576,7 +5584,7 @@ window.__ModuleLoader__.load({
       const section = card.section === 'working' ? 'active' : card.section;
       return { ...card, running:false, waiting:false, section };
     }
-    function buildOptimisticCardEntry(card, kind, { until = null, wasPinned = false, now = Date.now(), token = crypto.randomUUID() } = {}) {
+    function buildOptimisticCardEntry(card, kind, { until = null, wasPinned = false, undoKind = null, unsettledAt = undefined, beforeSnapshot = null, now = Date.now(), token = crypto.randomUUID() } = {}) {
       if (!card) return null;
       const baseRevision = card.revision ?? 0;
       if (kind === 'settle') {
@@ -5633,6 +5641,80 @@ window.__ModuleLoader__.load({
       }
       if (kind === 'clear-unread') {
         return { token, baseRevision, patch:{ manualUnread:false, unreadAt:null } };
+      }
+      if (kind === 'undo') {
+        const before = beforeSnapshot && typeof beforeSnapshot === 'object' ? beforeSnapshot : null;
+        const restoredUnsettledAt = before && Object.prototype.hasOwnProperty.call(before, 'unsettledAt')
+          ? (before.unsettledAt ?? null)
+          : (unsettledAt === undefined ? null : unsettledAt);
+        const canSettlePatch = card.context && !card.treeError && (!card.running || card.needsYou) ? { canSettle:true } : {};
+        const workingSection = (card.running && !card.needsYou) ? 'working' : 'active';
+        if (before?.snooze) {
+          const snoozeUntil = typeof before.snooze.until === 'string' ? before.snooze.until : null;
+          const snoozeMs = snoozeUntil ? Date.parse(snoozeUntil) : NaN;
+          const acked = before.snooze.wokeAcknowledged?.instanceId === before.snooze.instanceId;
+          if (Number.isFinite(snoozeMs) && snoozeMs > now) {
+            return {
+              token,
+              baseRevision,
+              patch: {
+                section:'snoozed', settled:false, settledOverride:before.settledOverride ?? null, settledAt:before.settledAt ?? null, unsettledAt:restoredUnsettledAt,
+                snooze:before.snooze, snoozed:true, snoozeUntil,
+                snoozeEffect:{ active:true, woke:false, deferExceptions:true, reason:'snoozed' },
+                woke:false, ...canSettlePatch,
+                ...(wasPinned ? { pinned:true } : {}),
+              },
+            };
+          }
+          const woke = Number.isFinite(snoozeMs) && snoozeMs <= now && !acked;
+          return {
+            token,
+            baseRevision,
+            patch: {
+              section:workingSection, settled:false, settledOverride:before.settledOverride ?? null, settledAt:before.settledAt ?? null, unsettledAt:restoredUnsettledAt,
+              snooze:before.snooze, snoozed:false, snoozeUntil,
+              snoozeEffect:{ active:false, woke, deferExceptions:false, reason:woke ? 'woke' : 'none' },
+              woke, ...canSettlePatch,
+              ...(wasPinned ? { pinned:true } : {}),
+            },
+          };
+        }
+        if (before && (before.settledOverride === 'settled' || before.settledAt != null)) {
+          return {
+            token,
+            baseRevision,
+            patch: {
+              section:'settled', settled:true, settledOverride:before.settledOverride ?? 'settled', settledAt:before.settledAt ?? null, unsettledAt:null,
+              snooze:null, snoozed:false, snoozeUntil:null,
+              snoozeEffect:{ active:false, woke:false, deferExceptions:false, reason:'none' },
+              woke:false, canSettle:false,
+              ...(wasPinned ? { pinned:true } : {}),
+            },
+          };
+        }
+        if (undoKind === 'snooze' && !before) {
+          return {
+            token,
+            baseRevision,
+            patch: {
+              section:workingSection, snooze:null, snoozed:false, snoozeUntil:null,
+              snoozeEffect:{ active:false, woke:false, deferExceptions:false, reason:'none' },
+              woke:false,
+              ...(wasPinned ? { pinned:true } : {}),
+            },
+          };
+        }
+        return {
+          token,
+          baseRevision,
+          patch: {
+            section:workingSection, settled:false, settledOverride:before?.settledOverride ?? null, settledAt:null, unsettledAt:restoredUnsettledAt,
+            snooze:null, snoozed:false, snoozeUntil:null,
+            snoozeEffect:{ active:false, woke:false, deferExceptions:false, reason:'none' },
+            woke:false, ...canSettlePatch,
+            ...(wasPinned ? { pinned:true } : {}),
+          },
+        };
       }
       return null;
     }
@@ -7830,6 +7912,16 @@ window.__ModuleLoader__.load({
             const pinnedSet = new Set(ctx.workspaces?.list?.getSnapshot?.()?.pinnedSessionIds ?? ctx.workspaces?.list?.getSnapshot?.()?.pinnedIds ?? []);
             normalized = { ...entry, sawUnpinned: !pinnedSet.has(entry.sessionId) };
           }
+          if (normalized.operationId) {
+            liveUndos = liveUndos.filter((item) => {
+              const superseded = item.sessionId === normalized.sessionId && item.operationId && item.operationId !== normalized.operationId;
+              if (superseded) {
+                consumedUndoIds.add(item.id);
+                consumedUndoIds.add(item.operationId);
+              }
+              return !superseded;
+            });
+          }
           const existingIndex = normalized.operationId ? liveUndos.findIndex((item) => item.operationId === normalized.operationId) : -1;
           if (existingIndex >= 0) {
             liveUndos[existingIndex] = { ...liveUndos[existingIndex], ...normalized };
@@ -7947,6 +8039,16 @@ window.__ModuleLoader__.load({
         };
         const acceptSnapshot = (snapshot) => {
           const current = store.getSnapshot().remote;
+          if (
+            current &&
+            current.generation === snapshot?.generation &&
+            typeof current.revision === 'number' &&
+            typeof snapshot?.revision === 'number' &&
+            snapshot.revision > 0 &&
+            snapshot.revision < current.revision
+          ) {
+            return;
+          }
           const previous = current?.snoozeSettings;
           const incoming = snapshot?.snoozeSettings;
           const keep = current?.generation === snapshot?.generation && previous &&
@@ -7997,15 +8099,19 @@ window.__ModuleLoader__.load({
             if (!Number.isFinite(receipt.expiresAt) || receipt.expiresAt <= now) continue;
             if (snapState.pendingActions?.[receipt.sessionId] || deferredUndoSessions.has(receipt.sessionId)) continue;
             const liveCard = cardMap.get(receipt.sessionId);
+            if (liveCard && typeof receipt.revision === 'number' && receipt.revision !== liveCard.revision) continue;
             if (receipt.kind === 'settle' && liveCard && liveCard.section !== 'settled') continue;
             if (receipt.kind === 'snooze' && liveCard && !isCardSnoozed(liveCard)) continue;
             if (!liveUndos.some((entry) => entry.operationId === receipt.operationId)) {
+              const hasBeforeUnsettledAt = Boolean(receipt.before && Object.prototype.hasOwnProperty.call(receipt.before, 'unsettledAt'));
               liveUndos.push({
                 id:receipt.operationId,
                 operationId:receipt.operationId,
                 sessionId:receipt.sessionId,
                 action:receipt.kind === 'snooze' ? 'Snoozed' : 'Settled',
                 kind:receipt.kind,
+                ...(hasBeforeUnsettledAt ? { unsettledAtSnapshot:receipt.before.unsettledAt ?? null } : {}),
+                ...(receipt.before ? { beforeSnapshot:receipt.before } : {}),
                 expiresAt:receipt.expiresAt,
               });
               addedFromStream = true;
@@ -8403,11 +8509,21 @@ window.__ModuleLoader__.load({
             return runtime.invokeShortcut('workspace.add','addProjectUnavailable');
           },
           async syncSnapshot(signal=lifetime.signal) {
+            const startedRevision = store.getSnapshot().remote?.revision ?? null;
             const result = await inboxRemote(ctx).snapshot({},signal);
             if (!result.ok) throw result.error;
             if (!result.value || result.value.schemaVersion !== 1 || !Array.isArray(result.value.cards)) throw new Error('Invalid Inbox snapshot');
             if (active && !signal.aborted) {
-              acceptSnapshot(result.value);
+              const latest = store.getSnapshot().remote;
+              const staleWhileWaiting = Boolean(
+                latest &&
+                latest.generation === result.value.generation &&
+                typeof latest.revision === 'number' &&
+                typeof result.value.revision === 'number' &&
+                result.value.revision < latest.revision &&
+                latest.revision !== startedRevision,
+              );
+              if (!staleWhileWaiting) acceptSnapshot(result.value);
               const currentSessionId = store.getSnapshot().currentSessionId;
               if (currentSessionId) runtime.markVisited(currentSessionId);
             }
@@ -8486,25 +8602,25 @@ window.__ModuleLoader__.load({
             }
           },
           async act(card,kind,extra={}) {
-            const { coParkingKeys = null, skipNavigation = false, batchExpiresAt = null, collectUndo = null, pinnedOrderSnapshot: passedPinnedOrderSnapshot = undefined, silentError = false, ...wireExtra } = extra;
+            const { coParkingKeys = null, skipNavigation = false, skipSync = false, batchExpiresAt = null, collectUndo = null, pinnedOrderSnapshot: passedPinnedOrderSnapshot = undefined, silentError = false, undoKind = null, wasPinned: undoWasPinned = false, unsettledAtSnapshot = undefined, beforeSnapshot = null, optimisticEntry: prebuiltOptimistic = null, deferClearOptimistic = false, deferClearPending = false, ...wireExtra } = extra;
             if (store.getSnapshot().pendingActions[card.sessionId]) return { committed:false };
             let target = card;
             if (needsSilentPrepare(target)) {
               const ready = await runtime.prepare(target);
               if (!ready) {
                 if (!silentError) reportError(kind, null, { status:'unavailable' });
-                return { committed:false };
+                return { committed:false, error:null, errorOpts:{ status:'unavailable' } };
               }
               target = currentCard(card.sessionId) ?? target;
             }
             if (store.getSnapshot().pendingActions[target.sessionId]) return { committed:false };
             if (!target.context) {
               if (!silentError) reportError(kind, null, { status:'unavailable' });
-              return { committed:false };
+              return { committed:false, error:null, errorOpts:{ status:'unavailable' } };
             }
             if (kind === 'settle' && target.running && !target.needsYou) {
               if (!silentError) reportError('settle', 'running', {status:'busy'});
-              return { committed:false };
+              return { committed:false, error:'running', errorOpts:{ status:'busy' } };
             }
             const computeForwardPlan = (snapState) => {
               const nativeWorkspaces = ctx.workspaces.list?.getSnapshot?.();
@@ -8541,13 +8657,18 @@ window.__ModuleLoader__.load({
             const wasPinnedOrderSnapshot = wasPinned
               ? (passedPinnedOrderSnapshot !== undefined ? passedPinnedOrderSnapshot : readPinnedOrder())
               : null;
-            const optimisticToken = crypto.randomUUID();
-            let optimisticEntry = buildOptimisticCardEntry(target, kind, {
-              until: wireExtra.until,
-              wasPinned,
-              now: Date.now(),
-              token: optimisticToken,
-            });
+            const optimisticToken = prebuiltOptimistic?.token ?? crypto.randomUUID();
+            let optimisticEntry = prebuiltOptimistic
+              ? (target.revision !== prebuiltOptimistic.baseRevision ? { ...prebuiltOptimistic, baseRevision: target.revision } : prebuiltOptimistic)
+              : buildOptimisticCardEntry(target, kind, {
+                until: wireExtra.until,
+                wasPinned: kind === 'undo' ? Boolean(undoWasPinned) : wasPinned,
+                undoKind,
+                unsettledAt: unsettledAtSnapshot,
+                beforeSnapshot,
+                now: Date.now(),
+                token: optimisticToken,
+              });
             if (wasPinned) {
               const beforePin = store.getSnapshot();
               store.set({
@@ -8579,6 +8700,7 @@ window.__ModuleLoader__.load({
               pendingActions:{...before.pendingActions,[target.sessionId]:1},
               ...(optimisticEntry ? { optimisticCards:{ ...(before.optimisticCards ?? {}), [target.sessionId]:optimisticEntry } } : {}),
             });
+            let outcomeCommitted = false;
             try {
               const result = await inboxRemote(ctx).act({sessionId:target.sessionId,operationId,revision:target.revision,context:target.context,kind,...wireExtra},lifetime.signal);
               if (!active) return { committed:false };
@@ -8586,28 +8708,30 @@ window.__ModuleLoader__.load({
                 const raw = result.error?.message ?? String(result.error);
                 store.set({lastAction:{operationId,kind,phase:'transport-error',message:raw}});
                 if (!silentError) reportError(kind, result.error);
-                return { committed:false };
+                return { committed:false, error:result.error, errorOpts:{} };
               }
               const answer = result.value;
               if (answer.status !== 'committed') {
                 const raw = answer.message ?? `${kind}: ${answer.status}`;
                 store.set({lastAction:{operationId,kind,phase:answer.status,message:raw}});
                 if (!silentError) reportError(kind, raw, {status:answer.status});
-                return { committed:false };
+                return { committed:false, error:raw, errorOpts:{status:answer.status} };
               }
+              outcomeCommitted = true;
               const postActCard = currentCard(target.sessionId);
-              if (!postActCard || postActCard.revision !== answer.revision) {
+              if (!skipSync && (!postActCard || postActCard.revision !== answer.revision)) {
                 await runtime.syncSnapshot();
               } else {
                 const currentSessionId = store.getSnapshot().currentSessionId;
                 if (currentSessionId) runtime.markVisited(currentSessionId);
               }
               if (!active || lifetime.signal.aborted) return { committed:false };
-              clearPending(target.sessionId);
+              if (!deferClearPending) clearPending(target.sessionId);
               store.set({lastAction:{operationId,kind,phase:'committed',effect:answer.effect,revision:answer.revision}});
               if (kind === 'restore') invalidateUndo(card.sessionId, ['Settled']);
               else if (kind === 'wake') invalidateUndo(card.sessionId, ['Snoozed']);
               else if (answer.receipt && (kind === 'settle' || kind === 'snooze')) {
+                const hasBeforeUnsettledAt = Boolean(answer.receipt.before && Object.prototype.hasOwnProperty.call(answer.receipt.before, 'unsettledAt'));
                 const entry = {
                   id:answer.receipt.operationId ?? operationId,
                   operationId:answer.receipt.operationId ?? operationId,
@@ -8616,6 +8740,8 @@ window.__ModuleLoader__.load({
                   kind,
                   wasPinned,
                   pinnedOrderSnapshot:wasPinnedOrderSnapshot,
+                  unsettledAtSnapshot:hasBeforeUnsettledAt ? (answer.receipt.before.unsettledAt ?? null) : (card.unsettledAt ?? target.unsettledAt ?? null),
+                  ...(answer.receipt.before ? { beforeSnapshot:answer.receipt.before } : {}),
                   origin:navigation?.origin ?? null,
                   expiresAt:batchExpiresAt ?? answer.receipt.expiresAt,
                 };
@@ -8651,12 +8777,17 @@ window.__ModuleLoader__.load({
                 store.set({lastAction:{operationId,kind,phase:'exception',message}});
                 if (!silentError) reportError(kind, error);
               }
-              return { committed:false };
+              return { committed:false, error, errorOpts:{} };
             }
             finally {
-              clearPending(card.sessionId);
-              clearOptimisticCard(target.sessionId, optimisticToken);
-              if (card.sessionId !== target.sessionId) clearOptimisticCard(card.sessionId, optimisticToken);
+              if (!deferClearPending || !outcomeCommitted) {
+                clearPending(card.sessionId);
+                if (card.sessionId !== target.sessionId) clearPending(target.sessionId);
+              }
+              if (!deferClearOptimistic || !outcomeCommitted) {
+                clearOptimisticCard(target.sessionId, optimisticToken);
+                if (card.sessionId !== target.sessionId) clearOptimisticCard(card.sessionId, optimisticToken);
+              }
             }
           },
           async actMany(cards, kind, extra = {}) {
@@ -8665,26 +8796,66 @@ window.__ModuleLoader__.load({
             const coParkingKeys = new Set(unique.map((card) => card.sessionId));
             const snap = store.getSnapshot();
             const activeOrigin = snap.panelKey === 'conversation' && coParkingKeys.has(snap.currentSessionId) ? snap.currentSessionId : null;
+            const pinnedOrderSnapshot = kind === 'settle' ? readPinnedOrder() : undefined;
             const releaseUndoDefer = deferUndoFor(coParkingKeys);
-            const collectedUndos = [];
+            const collectedByIndex = new Array(unique.length);
             try {
-              if (['settle','snooze'].includes(kind)) {
-                const coldTargets = unique.filter((card) => needsSilentPrepare(card));
-                if (coldTargets.length) {
-                  await Promise.allSettled(coldTargets.map((card) => runtime.prepare(card)));
-                }
+              const coldTargets = unique.filter((card) => needsSilentPrepare(card));
+              if (coldTargets.length) {
+                await Promise.allSettled(coldTargets.map((card) => runtime.prepare(card)));
               }
               if (!active || lifetime.signal.aborted) return;
               const prepared = unique.map((card) => currentCard(card.sessionId) ?? card);
-              await Promise.allSettled(prepared.map((card) => runtime.act(card, kind, {
+              const usesBatchSequence = kind === 'settle' || kind === 'restore';
+              const maxRestoreSortAt = kind === 'restore' ? Math.max(0, ...prepared.map((card) => localInboxSortTimestamp(card))) : 0;
+              const baseNow = kind === 'restore'
+                ? Math.max(prepared.length, Date.now(), maxRestoreSortAt + prepared.length)
+                : (usesBatchSequence ? Math.max(prepared.length, Date.now()) : Date.now());
+              const batchAtById = new Map();
+              const optimisticEntries = new Map();
+              prepared.forEach((card, index) => {
+                const itemAt = usesBatchSequence ? Math.max(1, baseNow - index) : baseNow;
+                if (usesBatchSequence) batchAtById.set(card.sessionId, itemAt);
+                const entry = buildOptimisticCardEntry(card, kind, {
+                  until: extra.until,
+                  wasPinned: kind === 'settle' && Boolean(card.pinned),
+                  now: itemAt,
+                });
+                if (entry) optimisticEntries.set(card.sessionId, entry);
+              });
+              const settled = await Promise.allSettled(prepared.map((card, index) => runtime.act(card, kind, {
                 ...extra,
+                ...(batchAtById.has(card.sessionId) ? { at: batchAtById.get(card.sessionId) } : {}),
+                ...(pinnedOrderSnapshot !== undefined ? { pinnedOrderSnapshot } : {}),
                 coParkingKeys,
                 skipNavigation:card.sessionId !== activeOrigin,
-                collectUndo:(entry) => { collectedUndos.push(entry); },
-              })));
+                skipSync:true,
+                optimisticEntry:optimisticEntries.get(card.sessionId) ?? null,
+                deferClearOptimistic:Boolean(optimisticEntries.get(card.sessionId)),
+                deferClearPending:true,
+                collectUndo:(entry) => { collectedByIndex[index] = entry; },
+              }).then((outcome) => ({ card, outcome }))));
+              const needsSync = active && !lifetime.signal.aborted && settled.some((res) =>
+                res.status === 'fulfilled' && res.value?.outcome?.committed &&
+                currentCard(res.value.card.sessionId)?.revision !== res.value.outcome.revision);
+              try {
+                if (needsSync) {
+                  try {
+                    await runtime.syncSnapshot();
+                  } catch (error) {
+                    if (active && !lifetime.signal.aborted) reportError('refresh', error);
+                  }
+                }
+              } finally {
+                for (const card of prepared) clearPending(card.sessionId);
+                for (const [id, entry] of optimisticEntries) {
+                  clearOptimisticCard(id, entry.token);
+                }
+              }
             } finally {
               releaseUndoDefer();
             }
+            const collectedUndos = collectedByIndex.filter(Boolean);
             if (!active || lifetime.signal.aborted || !collectedUndos.length) return;
             const minExpiresAt = Math.min(...collectedUndos.map((entry) => entry.expiresAt));
             for (const entry of collectedUndos) {
@@ -8731,32 +8902,131 @@ window.__ModuleLoader__.load({
             liveUndos = liveUndos.filter((entry) => !itemSet.has(entry) && (!entry.operationId || !items.some((item) => item.operationId === entry.operationId)));
             refreshUndoNotice();
             if (store.getSnapshot().undo?.id === noticeKey || store.getSnapshot().undo?.operationId === noticeKey) store.set({undo:null});
-            for (const item of [...items].reverse()) {
-              const card = store.getSnapshot().remote?.cards.find((candidate) => candidate.sessionId === item.sessionId) ?? item.cardSnapshot;
-              if (!card) { reportError('undo', null, {code:'session-missing'}); continue; }
-              if (item.kind === 'unpin') {
-                const repinned = await runtime.pin(card, true, { preservePinnedOrder:true });
-                if (repinned && Array.isArray(item.pinnedOrderSnapshot)) {
-                  if (savePinnedOrder([...item.pinnedOrderSnapshot, ...(readPinnedOrder() ?? [])])) {
-                    store.set({ viewRevision:store.getSnapshot().viewRevision + 1 });
-                  }
-                }
-                continue;
+            const reversed = [...items].reverse();
+            const remoteCardById = new Map((store.getSnapshot().remote?.cards ?? []).map((candidate) => [candidate.sessionId, candidate]));
+            const entries = reversed.map((item, orderIdx) => ({
+              item,
+              orderIdx,
+              card: remoteCardById.get(item.sessionId) ?? item.cardSnapshot ?? null,
+            }));
+            const groups = [];
+            const groupBySession = new Map();
+            for (const entry of entries) {
+              const id = entry.item.sessionId;
+              let list = groupBySession.get(id);
+              if (!list) { list = []; groupBySession.set(id, list); groups.push(list); }
+              list.push(entry);
+            }
+            const optimisticBySession = new Map();
+            const prevOptimistic = store.getSnapshot().optimisticCards ?? {};
+            const nextOptimistic = { ...prevOptimistic };
+            let optimisticAdded = false;
+            for (const group of groups) {
+              const targetEntry = [...group].reverse().find((entry) => entry.card && entry.item.kind !== 'unpin');
+              if (!targetEntry) continue;
+              const { item, card } = targetEntry;
+              const opt = buildOptimisticCardEntry(card, 'undo', {
+                undoKind: item.kind,
+                wasPinned: Boolean(item.wasPinned),
+                unsettledAt: item.unsettledAtSnapshot,
+                beforeSnapshot: item.beforeSnapshot ?? null,
+              });
+              if (opt) {
+                optimisticBySession.set(card.sessionId, opt);
+                nextOptimistic[card.sessionId] = opt;
+                optimisticAdded = true;
               }
-              const owner = store.getSnapshot().navigationOwner;
-              const origin = owner?.operationId === item.operationId ? owner.origin : null;
-              const outcome = await runtime.act(card,'undo',{targetOperationId:item.operationId});
-              if (outcome?.committed) {
-                if (item.wasPinned) {
-                  const fresh = currentCard(item.sessionId) ?? card;
-                  const repinned = await runtime.pin(fresh, true, { preservePinnedOrder:true });
-                  if (repinned && Array.isArray(item.pinnedOrderSnapshot)) {
-                    if (savePinnedOrder([...item.pinnedOrderSnapshot, ...(readPinnedOrder() ?? [])])) {
-                      store.set({ viewRevision:store.getSnapshot().viewRevision + 1 });
+            }
+            if (optimisticAdded) store.set({ optimisticCards:nextOptimistic });
+            const restoredPinnedSnapshots = [];
+            const committedOutcomes = [];
+            const deferredPendingIds = new Set();
+            let firstError = null;
+            const recordError = (error, errorOpts = {}) => {
+              if (!firstError) firstError = { error, errorOpts };
+            };
+            try {
+              await Promise.allSettled(groups.map(async (group) => {
+                for (let stepIdx = 0; stepIdx < group.length; stepIdx += 1) {
+                  const { item, orderIdx, card } = group[stepIdx];
+                  const isLastInGroup = stepIdx === group.length - 1;
+                  if (!active) return;
+                  const targetCard = currentCard(item.sessionId) ?? card;
+                  if (!targetCard) { recordError(null, {code:'session-missing'}); continue; }
+                  if (item.kind === 'unpin') {
+                    const repinned = await runtime.pin(targetCard, true, { preservePinnedOrder:true });
+                    if (repinned && Array.isArray(item.pinnedOrderSnapshot)) {
+                      restoredPinnedSnapshots.push({ orderIdx, snapshot:item.pinnedOrderSnapshot });
                     }
+                    continue;
+                  }
+                  const owner = store.getSnapshot().navigationOwner;
+                  const origin = owner?.operationId === item.operationId ? owner.origin : null;
+                  const opt = optimisticBySession.get(targetCard.sessionId) ?? null;
+                  if (isLastInGroup) deferredPendingIds.add(targetCard.sessionId);
+                  const outcome = await runtime.act(targetCard,'undo',{
+                    targetOperationId:item.operationId,
+                    skipSync:isLastInGroup,
+                    silentError:true,
+                    undoKind:item.kind,
+                    wasPinned:Boolean(item.wasPinned),
+                    unsettledAtSnapshot:item.unsettledAtSnapshot,
+                    beforeSnapshot:item.beforeSnapshot ?? null,
+                    optimisticEntry:opt,
+                    deferClearOptimistic:Boolean(opt),
+                    deferClearPending:isLastInGroup,
+                  });
+                  if (outcome?.committed) {
+                    if (!isLastInGroup && opt) {
+                      const refreshedCard = currentCard(item.sessionId);
+                      if (refreshedCard && refreshedCard.revision !== opt.baseRevision) {
+                        const refreshedOpt = { ...opt, baseRevision: refreshedCard.revision };
+                        optimisticBySession.set(item.sessionId, refreshedOpt);
+                        setOptimisticCard(item.sessionId, refreshedOpt);
+                      }
+                    }
+                    if (item.wasPinned) {
+                      const fresh = currentCard(item.sessionId) ?? targetCard;
+                      const repinned = await runtime.pin(fresh, true, { preservePinnedOrder:true });
+                      if (repinned && Array.isArray(item.pinnedOrderSnapshot)) {
+                        restoredPinnedSnapshots.push({ orderIdx, snapshot:item.pinnedOrderSnapshot });
+                      }
+                    }
+                    committedOutcomes.push({ sessionId:item.sessionId, revision:outcome.revision, origin, operationId:item.operationId });
+                  } else {
+                    if (opt) clearOptimisticCard(targetCard.sessionId, opt.token);
+                    recordError(outcome?.error ?? null, outcome?.errorOpts ?? {});
                   }
                 }
-                if (origin && store.getSnapshot().navigationOwner?.operationId === item.operationId) runtime.openSession(origin);
+              }));
+              if (active && restoredPinnedSnapshots.length) {
+                restoredPinnedSnapshots.sort((a, b) => a.orderIdx - b.orderIdx);
+                let orderChanged = false;
+                for (const { snapshot } of restoredPinnedSnapshots) {
+                  if (savePinnedOrder([...snapshot, ...(readPinnedOrder() ?? [])])) orderChanged = true;
+                }
+                if (orderChanged) store.set({ viewRevision:store.getSnapshot().viewRevision + 1 });
+              }
+              const needsSync = active && !lifetime.signal.aborted && committedOutcomes.some(
+                (entry) => currentCard(entry.sessionId)?.revision !== entry.revision,
+              );
+              if (needsSync) {
+                try {
+                  await runtime.syncSnapshot();
+                } catch (error) {
+                  if (active && !lifetime.signal.aborted) reportError('refresh', error);
+                }
+              }
+              if (active) {
+                const navOwnerId = store.getSnapshot().navigationOwner?.operationId;
+                const originMatch = committedOutcomes.find((entry) => entry.origin && entry.operationId === navOwnerId);
+                if (originMatch) runtime.openSession(originMatch.origin);
+                if (firstError) reportError('undo', firstError.error, firstError.errorOpts);
+              }
+            } finally {
+              for (const id of deferredPendingIds) clearPending(id);
+              for (const [id, opt] of optimisticBySession) {
+                clearOptimisticCard(id, opt.token);
               }
             }
           },
@@ -8979,7 +9249,7 @@ window.__ModuleLoader__.load({
           ctx.effect(() => ctx.locale.register(NS, lang, dict));
         }
         ctx.slots.inject('settings.section', () => ctx.slots.register({
-          name:'settings.section',id:INBOX_SETTINGS_ID,order:110,label:'T3 Inbox',locale:NS,inject:() => ({inbox:runtime}),
+          name:'settings.section',id:INBOX_SETTINGS_ID,order:110,label:() => translate(runtime.locale(),'inbox'),locale:NS,inject:() => ({inbox:runtime}),
         },InboxSettingsSection));
         ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
           name:'settings.section.icon',id:INBOX_SETTINGS_ID,order:110,
