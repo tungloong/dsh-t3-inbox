@@ -8,6 +8,7 @@ import {
   deriveCardStatus,
   foldProgress,
   foldSearchQuery,
+  hasActiveQueuedWork,
   hasCompletedTurn,
   inboxSortTimestamp,
   initialProgress,
@@ -1075,5 +1076,59 @@ test('workingGrace placement hold never paints Working status and applyClientRun
   assert.equal(waiting.waiting, true);
   assert.equal(waiting.section, 'working');
 });
+
+test('passive placement:"context" queue entries never classify idle threads as working or block snooze/settle', () => {
+  const contextQueue = [{ id: 'q-ctx', placement: 'context', content: [{ type: 'text', text: '[SCHEDULE CHANGE]' }] }];
+  const realQueue = [{ id: 'q-next', placement: 'next', content: [{ type: 'text', text: 'Follow up' }] }];
+  const untaggedQueue = [{ id: 'q-raw', content: [{ type: 'text', text: 'Queued prompt' }] }];
+
+  assert.equal(hasActiveQueuedWork([]), false);
+  assert.equal(hasActiveQueuedWork(null), false);
+  assert.equal(hasActiveQueuedWork(contextQueue), false);
+  assert.equal(hasActiveQueuedWork(realQueue), true);
+  assert.equal(hasActiveQueuedWork(untaggedQueue), true);
+  assert.equal(hasActiveQueuedWork([...contextQueue, ...realQueue]), true);
+
+  const doneProgress = ended('ctx-only', 10);
+  const idleWithContext = classifyCard({
+    enrolled: true,
+    progress: doneProgress,
+    members: [{ sessionId: 'ctx-only', progress: doneProgress, runtime: { running: false, queue: contextQueue, completeness: 'complete' } }],
+    runtime: { running: false, queue: contextQueue, completeness: 'complete' },
+    pending: [],
+    now: 20_000,
+  });
+  assert.equal(idleWithContext.running, false);
+  assert.equal(idleWithContext.section, 'active');
+  assert.equal(idleWithContext.canSettle, true);
+  assert.equal(idleWithContext.canSnooze, true);
+
+  const activeWithReal = classifyCard({
+    enrolled: true,
+    progress: doneProgress,
+    members: [{ sessionId: 'real-q', progress: doneProgress, runtime: { running: false, queue: [...contextQueue, ...realQueue], completeness: 'complete' } }],
+    runtime: { running: false, queue: [...contextQueue, ...realQueue], completeness: 'complete' },
+    pending: [],
+    now: 20_000,
+  });
+  assert.equal(activeWithReal.running, true);
+  assert.equal(activeWithReal.section, 'working');
+  assert.equal(activeWithReal.canSettle, false);
+  assert.equal(activeWithReal.canSnooze, false);
+
+  const staleCard = {
+    sessionId: 'ctx-only',
+    section: 'working',
+    running: true,
+    waiting: false,
+    needsYou: false,
+    runtime: { running: false, queue: contextQueue, completeness: 'complete' },
+    members: [{ sessionId: 'ctx-only', runtime: { running: false, queue: contextQueue }, progress: doneProgress }],
+  };
+  const overlaid = applyClientRunningOverlay(staleCard, { phase: 'ready', byId: { 'ctx-only': { running: false } } });
+  assert.equal(overlaid.running, false);
+  assert.equal(overlaid.section, 'active');
+});
+
 
 
