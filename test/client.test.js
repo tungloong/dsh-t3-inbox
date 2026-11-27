@@ -6635,3 +6635,74 @@ test('batch review regressions: same-session undo, syncSnapshot failure toleranc
     env.dispose();
   }
 });
+
+test('newer .wtg9ga_* sidebar shell rules, focus-aware unread, clock-skew openCard, and refresh toast dedup work cleanly', async () => {
+  const env = await clientHarness(['a', 'b'], { render: true, storage: true });
+  const oldActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounted;
+  const originalWarn = console.warn;
+  console.warn = () => {};
+  try {
+    mounted = await mountBrowser(env, { t: enTranslator(env) });
+
+    // 1. Newer .wtg9ga_* sidebar shell rules & unclipped whale brand rules are installed alongside legacy .kB3qhq_*.
+    const styleText = document.querySelector('style[data-t3-inbox]')?.textContent ?? '';
+    assert.ok(styleText.includes('html[data-t3-inbox="wide"] .wtg9ga_regionArea'));
+    assert.ok(styleText.includes('html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandMark { display:inline-flex; }'));
+    assert.ok(styleText.includes('html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg > g[clip-path*="whale"] { display:none; }'));
+    assert.ok(styleText.includes('.t3i-unread-dot'));
+    assert.ok(styleText.includes('.t3i-rail-unread::after'));
+
+    // 2. While snapshot is phase:'building' with no cards, host shell takeover stays inactive so native sidebar remains visible.
+    const readyRemote = structuredClone(env.runtime.store.getSnapshot().remote);
+    await act(async () => {
+      env.runtime.store.set({ remote: { ...readyRemote, phase: 'building', cards: [] } });
+    });
+    assert.equal(document.documentElement.getAttribute('data-t3-inbox'), null);
+    await act(async () => {
+      env.runtime.store.set({ remote: readyRemote });
+    });
+    assert.equal(document.documentElement.getAttribute('data-t3-inbox'), 'wide');
+
+    // 3. Completion arriving while window is blurred stays Done until focus returns.
+    const cardA = () => env.runtime.store.getSnapshot().remote.cards.find((c) => c.sessionId === 'a');
+    window.dispatchEvent(new window.Event('blur'));
+    const futureTime = Date.now() + 60_000;
+    const snapWithNewA = structuredClone(env.runtime.store.getSnapshot().remote);
+    const targetA = snapWithNewA.cards.find((c) => c.sessionId === 'a');
+    targetA.newResult = true;
+    targetA.result = { seq: 99, time: futureTime, reason: { kind: 'completed' } };
+    snapWithNewA.revision += 1;
+    await act(async () => {
+      env.emitSnapshot(snapWithNewA);
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    assert.equal(env.runtime.isUnread(cardA()), true, 'blurred window preserves Done on active session');
+    await act(async () => {
+      window.dispatchEvent(new window.Event('focus'));
+    });
+    assert.equal(env.runtime.isUnread(cardA()), false, 'returning focus clears Done even when result.time is ahead of Date.now()');
+
+    // 4. openCard clears unread even when server result.time is slightly ahead of local Date.now().
+    const cardB = env.runtime.store.getSnapshot().remote.cards.find((c) => c.sessionId === 'b');
+    const skewedB = { ...cardB, newResult: true, result: { seq: 100, time: Date.now() + 30_000, reason: { kind: 'completed' } } };
+    await act(async () => {
+      env.runtime.openCard(skewedB);
+    });
+    assert.equal(env.runtime.isUnread(skewedB), false);
+
+    // 5. Identical refresh errors reuse existing errorToast.id instead of replaying toast animation.
+    env.runtime.reportError('refresh', new Error('first failure'));
+    const firstId = env.runtime.store.getSnapshot().errorToast?.id;
+    assert.ok(firstId);
+    env.runtime.reportError('refresh', new Error('second failure'));
+    assert.equal(env.runtime.store.getSnapshot().errorToast?.id, firstId);
+  } finally {
+    console.warn = originalWarn;
+    if (mounted) await act(async () => { mounted.root.unmount(); });
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldActEnvironment;
+    env.dispose();
+  }
+});
+

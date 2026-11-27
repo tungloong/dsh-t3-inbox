@@ -2357,8 +2357,11 @@ window.__ModuleLoader__.load({
       .t3i-midtrunc-head[data-overflow] + .t3i-midtrunc-tail::before { content:'…'; }
       .t3i-item[data-variant="card"][data-has-meta="true"] .t3i-row { height:4.875rem; }
       .t3i-row-main { display:flex; flex:1; align-items:center; gap:6px; min-width:0; }
-      /* T3 card title: text-sm + font-medium unless receding */
+      /* T3 card title: text-sm + font-medium unless receding; use 600 on unread for crisp CJK contrast */
       .t3i-row-title { display:block; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:500; line-height:20px; color:var(--dsw-alias-label-primary); }
+      .t3i-item[data-unread="true"] .t3i-row-title { font-weight:600; color:var(--dsw-alias-label-primary); }
+      .t3i-unread-dot { display:inline-block; flex:none; width:6px; height:6px; border-radius:999px; background:#007a55; }
+      body[data-ds-dark-theme] .t3i-unread-dot { background:#34d399; }
       .t3i-rename-input { flex:1; min-width:0; height:22px; padding:0 4px; border:1px solid var(--dsw-alias-border-l1); border-radius:4px; background:var(--dsw-alias-bg-layer-1); color:var(--dsw-alias-label-primary); font:inherit; font-size:14px; font-weight:500; line-height:20px; outline:none; }
       .t3i-rename-input:focus { border-color:var(--t3i-accent, #1b4ed8); }
       .t3i-row-state { flex:none; max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-state-warn-primary); font-size:10.5px; }
@@ -2393,7 +2396,7 @@ window.__ModuleLoader__.load({
       .t3i-item[data-variant="compact"] .t3i-row { flex-direction:row; align-items:center; gap:10px; height:36px; min-height:36px; padding:0 10px; border-radius:6px; }
       .t3i-item[data-variant="compact"] .t3i-row-title { font-size:14px; font-weight:400; line-height:20px; color:var(--t3i-secondary-label); }
       .t3i-item[data-variant="compact"][data-section="settled"]:not([data-unread="true"]):not([data-selected="true"]):not([data-sweep]):not(:hover):not(:focus-within) .t3i-row:not([aria-current="page"]) .t3i-row-title { color:var(--t3i-settled-title); }
-      .t3i-item[data-variant="compact"][data-section="settled"][data-unread="true"] .t3i-row-title { font-weight:500; color:var(--dsw-alias-label-primary); }
+      .t3i-item[data-variant="compact"][data-section="settled"][data-unread="true"] .t3i-row-title { font-weight:600; color:var(--dsw-alias-label-primary); }
       .t3i-item[data-variant="compact"][data-section="snoozed"]:not([data-recede="true"]) .t3i-row-title { font-weight:500; color:var(--dsw-alias-label-primary); }
       .t3i-item[data-variant="compact"][data-section="snoozed"][data-recede="true"]:not([data-selected="true"]):not([data-sweep]):not(:hover):not(:focus-within) .t3i-row:not([aria-current="page"]) .t3i-row-title { font-weight:400; color:var(--t3i-secondary-label); }
       .t3i-item[data-variant="compact"]:hover .t3i-row-title, .t3i-item[data-variant="compact"]:focus-within .t3i-row-title, .t3i-item[data-variant="compact"] .t3i-row[aria-current="page"] .t3i-row-title { color:var(--dsw-alias-label-primary); }
@@ -2600,18 +2603,24 @@ window.__ModuleLoader__.load({
       .t3i-root:not([data-wide="true"]) { flex:none; align-items:center; }
       .t3i-root:not([data-wide="true"]) .t3i-head { padding:0; display:flex; flex-direction:column; align-items:center; }
       .t3i-root:not([data-wide="true"]) .t3i-icon-button { width:36px; height:36px; border-radius:var(--dsw-radius-md, 12px); color:var(--dsw-alias-label-primary); }
+      .t3i-root:not([data-wide="true"]) .t3i-rail-unread::after { content:''; position:absolute; right:6px; top:6px; width:7px; height:7px; border-radius:999px; background:#007a55; box-shadow:0 0 0 2px var(--t3i-sidebar-background, var(--dsw-specific-sidebar-fill, #f9fafb)); }
+      body[data-ds-dark-theme] .t3i-root:not([data-wide="true"]) .t3i-rail-unread::after { background:#34d399; }
 
       /* Host shell adaptation — applies only while the Inbox owns a wide sidebar (DSH 0.2.2-rc.1 & 0.2.2-rc.3+). */
       html[data-t3-inbox="wide"] .kB3qhq_newSessionRow,
       html[data-t3-inbox="wide"] .kB3qhq_newSession,
       html[data-t3-inbox="wide"] .kB3qhq_footArea,
-      html[data-t3-inbox="wide"] .kB3qhq_scrollFade { display:none !important; }
+      html[data-t3-inbox="wide"] .kB3qhq_scrollFade,
+      html[data-t3-inbox="wide"] .wtg9ga_newSessionRow,
+      html[data-t3-inbox="wide"] .wtg9ga_newSession,
+      html[data-t3-inbox="wide"] .wtg9ga_footArea,
+      html[data-t3-inbox="wide"] .wtg9ga_scrollFade { display:none !important; }
       html[data-t3-inbox-background="t3"] body { --t3i-sidebar-background:${DEFAULT_SIDEBAR_APPEARANCE.light}; }
       html[data-t3-inbox-background="t3"] body[data-ds-dark-theme] { --t3i-sidebar-background:${DEFAULT_SIDEBAR_APPEARANCE.dark}; }
       html[data-t3-inbox-background="custom"] body { --t3i-sidebar-background:var(--t3i-sidebar-light); }
       html[data-t3-inbox-background="custom"] body[data-ds-dark-theme] { --t3i-sidebar-background:var(--t3i-sidebar-dark); }
       html[data-t3-inbox="wide"]:is([data-t3-inbox-background="t3"],[data-t3-inbox-background="custom"])
-        :is(.t3i-root[data-wide="true"],.kB3qhq_root,.kB3qhq_topStrip,.kB3qhq_panelList) { background-color:var(--t3i-sidebar-background); }
+        :is(.t3i-root[data-wide="true"],.kB3qhq_root,.kB3qhq_topStrip,.kB3qhq_panelList,.wtg9ga_root,.wtg9ga_topStrip,.wtg9ga_panelList) { background-color:var(--t3i-sidebar-background); }
       html[data-t3-inbox="wide"] .kB3qhq_topStrip { height:44px; padding:6px 12px 0; }
       html[data-t3-inbox="wide"] .kB3qhq_logoRow { height:40px; padding:4px 4px 4px 8px; margin:0; gap:6px; background:transparent; }
       html[data-t3-inbox="wide"] .kB3qhq_topStrip + .kB3qhq_logoRow { position:relative; z-index:1; height:44px; margin:-44px calc(44px - var(--dsh-sidebar-inline-padding, 8px)) 0 calc(88px - var(--dsh-sidebar-inline-padding, 8px)); padding:6px 0 0; }
@@ -2637,6 +2646,33 @@ window.__ModuleLoader__.load({
       html[data-t3-inbox="wide"] .kB3qhq_scrollRegion .kB3qhq_regionArea { flex:1; min-height:0; margin:0; padding:0; }
       html[data-t3-inbox="wide"][data-t3-inbox-nav="off"] .kB3qhq_panelList { display:none !important; }
       html[data-t3-inbox="wide"][data-t3-inbox-nav="on"] .kB3qhq_panelList { margin:0; padding:6px var(--dsh-sidebar-inline-padding, 8px) 4px; }
+      /* Newer DSH sidebar CSS-module hash (.wtg9ga_*), where wordmark SVG viewBox starts at x=26 (whale clips unless brandMark stays visible). */
+      html[data-t3-inbox="wide"] .wtg9ga_topStrip { height:44px; padding:6px 12px 0; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow { height:40px; padding:4px 4px 4px 8px; margin:0; gap:6px; background:transparent; }
+      html[data-t3-inbox="wide"] .wtg9ga_topStrip + .wtg9ga_logoRow { position:relative; z-index:1; height:44px; margin:-44px calc(44px - var(--dsh-sidebar-inline-padding, 8px)) 0 calc(88px - var(--dsh-sidebar-inline-padding, 8px)); padding:6px 0 0; }
+      html[data-t3-inbox="wide"][data-fullscreen] .wtg9ga_topStrip + .wtg9ga_logoRow { margin:-44px calc(12px - var(--dsh-sidebar-inline-padding, 8px)) 0 calc(48px - var(--dsh-sidebar-inline-padding, 8px)); }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brand { display:flex; align-items:center; flex:1; min-width:0; container-type:inline-size; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandIdentity { height:18px; gap:4px; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandMark { display:inline-flex; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandMark svg { display:block; width:16px; height:16px; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName { height:18px; font-size:13px; line-height:18px; letter-spacing:0.02em; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg { display:block; height:18px; width:auto; overflow:visible; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg > rect { display:none; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg > g[clip-path*="whale"] { display:none; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg > g[clip-path*="badge"] { clip-path:none; transform-box:fill-box; transform-origin:left bottom; transform:translate(-5.5px, 2.3px) scale(1.24); }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName svg > g[clip-path*="badge"] path { fill:var(--dsw-alias-label-secondary); }
+      html[data-t3-inbox="wide"] body[data-ds-dark-theme] .wtg9ga_logoRow .wtg9ga_brandName svg > g[clip-path*="badge"] path { fill:color-mix(in srgb, var(--dsw-alias-label-primary) 58%, transparent); }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_fallbackBrandName { font-size:13px; line-height:18px; }
+      html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_localBuildBrand { height:18px; }
+      @container (max-width: 120px) { html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandMark { display:inline-flex; } html[data-t3-inbox="wide"] .wtg9ga_logoRow .wtg9ga_brandName { display:none; } }
+      html[data-t3-inbox="wide"] .wtg9ga_regionArea { flex:1; min-height:0; margin:0 calc(-1 * var(--dsh-sidebar-inline-padding, 8px)) -6px; padding:0; }
+      html[data-t3-inbox="wide"] .wtg9ga_scrollRegion { margin:0 calc(-1 * var(--dsh-sidebar-inline-padding, 8px)) -6px; container-type:normal; }
+      html[data-t3-inbox="wide"] .wtg9ga_scrollArea { display:flex; flex-direction:column; flex:1; min-height:0; margin:0; padding:0; overflow:hidden; }
+      html[data-t3-inbox="wide"] .wtg9ga_scrollArea::before,
+      html[data-t3-inbox="wide"] .wtg9ga_scrollArea::after { display:none !important; }
+      html[data-t3-inbox="wide"] .wtg9ga_scrollRegion .wtg9ga_regionArea { flex:1; min-height:0; margin:0; padding:0; }
+      html[data-t3-inbox="wide"][data-t3-inbox-nav="off"] .wtg9ga_panelList { display:none !important; }
+      html[data-t3-inbox="wide"][data-t3-inbox-nav="on"] .wtg9ga_panelList { margin:0; padding:6px var(--dsh-sidebar-inline-padding, 8px) 4px; }
       .t3i-sidebar-switch-icon { display:block; }
     `;
 
@@ -2972,6 +3008,10 @@ window.__ModuleLoader__.load({
         set:(patch) => { snapshot = {...snapshot,...patch}; for (const fn of listeners) fn(); },
       };
     }
+    function hasUsableRemote(snapshot) {
+      const remote = snapshot?.remote;
+      return Boolean(remote && (remote.phase === 'ready' || (remote.cards?.length ?? 0) > 0));
+    }
     function useView(runtime) { return React.useSyncExternalStore(runtime.store.subscribe,runtime.store.getSnapshot); }
     const PLURAL_RULES_CACHE = new Map();
     function normalizeLocale(localeId) {
@@ -3098,7 +3138,7 @@ window.__ModuleLoader__.load({
         })),
         home:Boolean(document.querySelector('.t3i-home')),
         styleInstalled:Boolean(document.querySelector('style[data-t3-inbox]')),
-        modeButtons:[...document.querySelectorAll('.kB3qhq_panelRow:has(.t3i-sidebar-switch-icon)')].map((element) => ({visible:element.getClientRects().length>0,label:element.getAttribute('aria-label')})),
+        modeButtons:[...document.querySelectorAll('.kB3qhq_panelRow:has(.t3i-sidebar-switch-icon), .wtg9ga_panelRow:has(.t3i-sidebar-switch-icon)')].map((element) => ({visible:element.getClientRects().length>0,label:element.getAttribute('aria-label')})),
         wide:view.wide,
         viewport:typeof window === 'undefined' ? null : {width:window.innerWidth,height:window.innerHeight,screenX:window.screenX,screenY:window.screenY,outerHeight:window.outerHeight},
         visibility:document.visibilityState,
@@ -5561,19 +5601,22 @@ window.__ModuleLoader__.load({
       if (section === 'working' || section === 'snoozed') section = 'active';
       return { ...card, pending, needsYou:true, pendingCount:Math.max(card.pendingCount ?? 0, pending.length), section };
     }
+    function hasActiveQueuedWork(queue) {
+      return Array.isArray(queue) && queue.some((item) => item?.placement !== 'context');
+    }
     function localRunningOverlay(card, sessions) {
       if (!card || !card.running) return card;
       if (!sessions || sessions.phase === 'pending') return card;
       const summary = sessions.byId?.[card.sessionId];
       if (summary?.running !== false) return card;
-      if (card.runtime?.queue?.length > 0) return card;
+      if (hasActiveQueuedWork(card.runtime?.queue)) return card;
       const children = Array.isArray(card.members) ? card.members.slice(1) : [];
       const childRunning = children.some((member) => {
         const childSummary = sessions.byId?.[member?.sessionId];
         return Boolean(
           childSummary?.running === true
           || member?.runtime?.running
-          || member?.runtime?.queue?.length
+          || hasActiveQueuedWork(member?.runtime?.queue)
           || (member?.progress?.turn && !member.progress.turn.end),
         );
       });
@@ -6159,12 +6202,15 @@ window.__ModuleLoader__.load({
         !card.archived ? h('button',{type:'button',role:'menuitem',className:'t3i-context-item',disabled:!canMarkUnreadClick,onClick:() => { closeContext(); void runtime.markUnread(card); }},t('markUnread')) : null,
         card.workspaceId ? h('button',{type:'button',role:'menuitem',className:'t3i-context-item',onClick:() => { closeContext(); runtime.setWorkspaceFilter(filteredByThisWorkspace ? [] : [card.workspaceId]); }},filteredByThisWorkspace ? t('showAllProjects') : t('filterBy').replace('{name}', ws.name)) : null) : null;
       const contextMenuPortalTarget = portalRootRef?.current ?? (typeof document !== 'undefined' ? document.body : null);
+      const showUnreadDot = Boolean(unread && (isCompact || corner.status?.tone === 'done'));
+      const unreadDotNode = showUnreadDot ? h('span',{className:'t3i-unread-dot','aria-hidden':true}) : null;
       return h(React.Fragment,null,
         h('li',{ref:rootRef,className:`t3i-item${rowDrag?.isPeer ? ' t3i-drag-peer' : ''}`,'data-variant':isCompact ? 'compact' : 'card','data-session-id':card.sessionId,'data-drag-item-id':card.sessionId,'data-section':card.pinned ? 'pinned' : card.section,'data-shelf':shelf,'data-working':corner.status?.tone === 'working' ? 'true' : undefined,'data-unread':unread ? 'true' : undefined,'data-selected':selected ? 'true' : undefined,'data-sweep':sweepAction ?? undefined,'data-has-meta':(!isCompact && hasMeta) ? 'true' : undefined,'data-drag-enabled':draggable ? 'true' : undefined,'data-drag-peer':rowDrag?.isPeer ? 'true' : undefined,'data-dragging':isDragging ? 'true' : undefined,'data-recede':shouldRecedeCard(card, unread, current, corner.status?.tone === 'failed' || corner.status?.tone === 'limited', selected, Boolean(sweepAction) || isDragging) ? 'true' : undefined,'data-failed-read':(corner.status?.tone === 'failed' && !unread && !card.woke) ? 'true' : undefined,style:rowDrag?.style,onContextMenu:openContext,onMouseEnter:(event) => { if (renaming || menu || contextMenu || isDragging) return; if (!closestTooltipTrigger(event?.target)) showPreview(); },onMouseOver:(event) => { if (renaming || menu || contextMenu || isDragging) return; if (event?.relatedTarget && rootRef.current?.contains(event.relatedTarget) && closestTooltipTrigger(event.relatedTarget) && !closestTooltipTrigger(event?.target)) showPreview(); },onMouseLeave:() => hidePreview({ fromPointer:true }),...dragHandlers},
           isCompact
             ? h('div',rowProps,
                 h(Monogram,{card}),
                 h('span',{className:'t3i-row-main'},
+                  unreadDotNode,
                   titleNode),
                 isDragging ? inlineDropVerb : h('span',{className:'t3i-slim-slot','data-jump':jumpHint ? 'true' : undefined},
                   isSnoozed && wakeRemain
@@ -6194,7 +6240,7 @@ window.__ModuleLoader__.load({
                       jumpHint,
                       sweepBadge))),
                 h('span',{className:'t3i-card-bottom'},
-                  h('span',{className:'t3i-row-main'},titleNode)),
+                  h('span',{className:'t3i-row-main'},unreadDotNode,titleNode)),
                 hasMeta ? h('span',{className:'t3i-card-meta-line','aria-hidden':true},
                   h('span',{className:'t3i-card-meta-branch',title:card.worktree && card.branch ? resolveLocalized(t, locale, 'worktreeLabel', {branch:card.branch}) : undefined},
                     card.worktree ? h(Icon,{name:'folderGit2',size:14,className:'t3i-card-meta-worktree-icon'}) : null,
@@ -7630,10 +7676,14 @@ window.__ModuleLoader__.load({
         selectedProjects.length === 1 ? h(Monogram,{card:projectCard(selectedProjects[0])})
           : selectedProjects.length > 1 ? h('span',{className:'t3i-scope-stack'},selectedProjects.slice(0,2).map((workspace) => h(Monogram,{key:workspace.workspaceId,card:projectCard(workspace)})))
             : h(Icon,{name:'filter',size:16}));
-      if (!wide) return h('div',{className:'t3i-root'},
-        h('div',{className:'t3i-head'},
-          h(ActionButton,{icon:'inbox',label:t('expandInbox'),onClick:expandSidebar})),
-        h(ErrorToast,{toast:view.errorToast,runtime,t}));
+      if (!wide) {
+        const railUnreadCount = cards.filter((card) => !card.archived && (card.needsYou || runtime.isUnread(card))).length;
+        const railLabel = railUnreadCount > 0 ? `${t('expandInbox')} (${railUnreadCount})` : t('expandInbox');
+        return h('div',{className:'t3i-root'},
+          h('div',{className:'t3i-head'},
+            h(ActionButton,{icon:'inbox',label:railLabel,className:railUnreadCount > 0 ? 't3i-rail-unread' : undefined,onClick:expandSidebar})),
+          h(ErrorToast,{toast:view.errorToast,runtime,t}));
+      }
       return h('div',{ref:rootRef,className:'t3i-root','data-wide':'true'},
         h('div',{ref:headRef,className:'t3i-head'},
           h('div',{className:'t3i-title-row'},
@@ -8037,6 +8087,19 @@ window.__ModuleLoader__.load({
             store.set({ viewRevision: store.getSnapshot().viewRevision + 1 });
           }
         };
+        let windowBlurred = false;
+        const isWindowActivelyViewed = () => {
+          if (windowBlurred) return false;
+          if (typeof document === 'undefined') return true;
+          if (document.visibilityState === 'hidden') return false;
+          if (typeof document.hasFocus === 'function') {
+            const ua = typeof window !== 'undefined' ? (window.navigator?.userAgent ?? '') : '';
+            const isJsdom = /jsdom/i.test(ua);
+            const hasCustomHasFocus = Object.prototype.hasOwnProperty.call(document, 'hasFocus');
+            if ((!isJsdom || hasCustomHasFocus) && !document.hasFocus()) return false;
+          }
+          return true;
+        };
         const acceptSnapshot = (snapshot) => {
           const current = store.getSnapshot().remote;
           if (
@@ -8079,8 +8142,11 @@ window.__ModuleLoader__.load({
             return;
           }
           const prevToast = snapState.errorToast;
-          // Publish a visible completion and its visit together so the sidebar never renders it as Done.
-          const viewed = snapState.panelKey === 'conversation' ? cardMap.get(snapState.currentSessionId) : null;
+          // Only auto-mark the active session visited when the user is actively viewing this window;
+          // completions arriving while DSH is unfocused/hidden remain Done until the user returns.
+          const viewed = snapState.panelKey === 'conversation' && isWindowActivelyViewed()
+            ? cardMap.get(snapState.currentSessionId)
+            : null;
           const visitPatch = viewed?.newResult && !viewed.manualUnread
             ? advanceVisits(snapState.visited,[viewed.sessionId],viewed.result?.time)
             : {};
@@ -8133,6 +8199,12 @@ window.__ModuleLoader__.load({
           if (raw) console.warn(`t3-inbox ${kind} failed:`, raw);
           const t = (key) => translate(runtime.locale(), key);
           const mapped = mapFriendlyError(kind, raw, t, opts);
+          const prevToast = store.getSnapshot().errorToast;
+          // Reuse existing toast id for identical active refresh errors so retries never replay toast animation.
+          if (kind === 'refresh' && prevToast?.kind === 'refresh' && prevToast.title === mapped.title && prevToast.description === mapped.description) {
+            store.set({actionError:mapped.message});
+            return;
+          }
           store.set({actionError:mapped.message,errorToast:{id:crypto.randomUUID(),kind,title:mapped.title,description:mapped.description}});
         };
         const housekeepingInFlight = new Set();
@@ -8329,7 +8401,8 @@ window.__ModuleLoader__.load({
             await Promise.allSettled(unique.map((card) => runtime.markUnread(card)));
           },
           openCard(card) {
-            runtime.markVisited(card.sessionId);
+            const visitAt = Math.max(Date.now(), Number.isFinite(card?.result?.time) ? card.result.time : 0);
+            runtime.markVisited(card.sessionId, visitAt);
             runtime.openSession(card.sessionId);
             quietOpenHousekeeping(card.sessionId, card);
           },
@@ -8389,8 +8462,8 @@ window.__ModuleLoader__.load({
             store.set({mode:nextMode,selectedIds:[],anchorId:null,viewRevision:current.viewRevision+1,pendingNavigation:null,navigationOwner:null});
             if (restoreFocus) window.requestAnimationFrame?.(() => {
               if (!active || store.getSnapshot().mode !== nextMode) return;
-              const nativeRow = 'button.kB3qhq_panelRow:has(.t3i-sidebar-switch-icon)';
-              const controls = [nativeRow,'.kB3qhq_panelList button[aria-haspopup="menu"]','.t3i-settings-trigger'];
+              const nativeRow = 'button.kB3qhq_panelRow:has(.t3i-sidebar-switch-icon), button.wtg9ga_panelRow:has(.t3i-sidebar-switch-icon)';
+              const controls = [nativeRow,'.kB3qhq_panelList button[aria-haspopup="menu"], .wtg9ga_panelList button[aria-haspopup="menu"]','.t3i-settings-trigger'];
               const next = controls.map((selector) => document.querySelector(selector)).find((button) => button?.getClientRects().length);
               next?.focus({preventScroll:true});
             });
@@ -8524,8 +8597,11 @@ window.__ModuleLoader__.load({
                 latest.revision !== startedRevision,
               );
               if (!staleWhileWaiting) acceptSnapshot(result.value);
-              const currentSessionId = store.getSnapshot().currentSessionId;
-              if (currentSessionId) runtime.markVisited(currentSessionId);
+              const snapNow = store.getSnapshot();
+              if (snapNow.panelKey === 'conversation' && snapNow.currentSessionId && isWindowActivelyViewed()) {
+                const viewedCard = snapNow.remote?.cards?.find((item) => item.sessionId === snapNow.currentSessionId);
+                if (!viewedCard?.manualUnread) runtime.markVisited(snapNow.currentSessionId);
+              }
             }
           },
           async pin(card,pinned,opts = {}) {
@@ -9211,8 +9287,11 @@ window.__ModuleLoader__.load({
           }
         });
         }
-        const connect = () => {
+        let retryAttempt = 0;
+        let refreshErrorShown = false;
+        const connect = (fromRetry = false) => {
           if (!active) return;
+          if (!fromRetry) { retryAttempt = 0; refreshErrorShown = false; }
           if (retry) { clearTimeout(retry); retry = null; }
           streamController?.abort();
           const previous = store.getSnapshot().remote;
@@ -9226,18 +9305,33 @@ window.__ModuleLoader__.load({
               const initial = await inboxRemote(ctx).snapshot({},controller.signal);
               if (!initial.ok) throw initial.error;
               if (!initial.value || initial.value.schemaVersion !== 1 || !Array.isArray(initial.value.cards)) throw new Error('Invalid Inbox snapshot');
+              retryAttempt = 0;
+              refreshErrorShown = false;
               if (active && !controller.signal.aborted) acceptSnapshot(initial.value);
               const stream = inboxRemote(ctx).follow({},controller.signal);
               for await (const snapshot of stream) {
                 if (!active || controller.signal.aborted) break;
                 if (!snapshot || snapshot.schemaVersion !== 1 || !Array.isArray(snapshot.cards)) throw new Error('Invalid Inbox snapshot');
+                retryAttempt = 0;
+                refreshErrorShown = false;
                 acceptSnapshot(snapshot);
               }
-              if (active && !controller.signal.aborted) throw new Error('Inbox stream ended');
+              if (active && !controller.signal.aborted) {
+                retryAttempt = 0;
+                retry = setTimeout(() => connect(true), 500);
+              }
             } catch (error) {
               if (active && !controller.signal.aborted) {
-                reportError('refresh', error);
-                retry = setTimeout(connect,500);
+                retryAttempt += 1;
+                // Quietly back off during brief startup/reload windows; toast at most once per outage.
+                if (retryAttempt >= 4 && !refreshErrorShown) {
+                  refreshErrorShown = true;
+                  reportError('refresh', error);
+                } else if (error) {
+                  console.warn('t3-inbox refresh failed (retrying):', error);
+                }
+                const delayMs = Math.min(5000, 500 * (2 ** Math.min(retryAttempt - 1, 4)));
+                retry = setTimeout(() => connect(true), delayMs);
               }
             } finally {
               lifetime.signal.removeEventListener('abort',abort);
@@ -9308,7 +9402,7 @@ window.__ModuleLoader__.load({
               pendingFrame = 0;
               pendingMicrotask = false;
               const current = store.getSnapshot();
-              if (current.mode === 'inbox' && current.wide === true && current.sidebarAppearance.mode === 'auto') {
+              if (current.mode === 'inbox' && current.wide === true && hasUsableRemote(current) && current.sidebarAppearance.mode === 'auto') {
                 applyBackground(current.sidebarAppearance);
               }
             };
@@ -9347,12 +9441,15 @@ window.__ModuleLoader__.load({
             }
           };
           let previous;
+          let previousRemoteReady = null;
           const sync = () => {
             const current = store.getSnapshot();
+            const remoteReady = hasUsableRemote(current);
             if (previous && current.mode === previous.mode && current.wide === previous.wide &&
-              current.panelsPosition === previous.panelsPosition && current.sidebarAppearance === previous.sidebarAppearance) return;
+              current.panelsPosition === previous.panelsPosition && current.sidebarAppearance === previous.sidebarAppearance && previousRemoteReady === remoteReady) return;
             previous = current;
-            if (current.mode === 'inbox' && current.wide === true) {
+            previousRemoteReady = remoteReady;
+            if (current.mode === 'inbox' && current.wide === true && remoteReady) {
               shellRoot.setAttribute('data-t3-inbox','wide');
               shellRoot.setAttribute('data-t3-inbox-nav',current.panelsPosition === 'top' ? 'on' : 'off');
               applyBackground(current.sidebarAppearance);
@@ -9370,7 +9467,8 @@ window.__ModuleLoader__.load({
         ctx.effect(() => {
           let disposeBrowser;
           const reconcile = () => {
-            const enabled = store.getSnapshot().mode === 'inbox';
+            const current = store.getSnapshot();
+            const enabled = current.mode === 'inbox' && hasUsableRemote(current);
             if (enabled && !disposeBrowser) disposeBrowser = ctx.slots.inject('sidebar.workspaces',() => ctx.slots.register({name:'sidebar.workspaces',priority:-10,locale:NS,inject:() => ({inbox:runtime})},InboxBrowser));
             if (!enabled && disposeBrowser) { disposeBrowser(); disposeBrowser = undefined; }
           };
@@ -9435,7 +9533,7 @@ window.__ModuleLoader__.load({
           const offLocale = typeof ctx.locale?.subscribe === 'function' ? ctx.locale.subscribe(syncGlobalPanels) : null;
           return () => { offSlots?.(); offLocale?.(); };
         },'t3-inbox: global panels');
-        ctx.on('connection/reset',connect);
+        ctx.on('connection/reset',() => connect(false));
         ctx.effect(() => {
           if (typeof ctx.slots.onEntryError !== 'function') return;
           return ctx.slots.onEntryError((_key,registration,cause) => {
@@ -9648,6 +9746,36 @@ window.__ModuleLoader__.load({
             }
           };
         }, 't3-inbox: undo shortcut');
+        ctx.effect(() => {
+          if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+          const markActiveOnReturn = () => {
+            if (!active || !isWindowActivelyViewed()) return;
+            const snap = store.getSnapshot();
+            if (snap.panelKey !== 'conversation' || !snap.currentSessionId) return;
+            const viewed = snap.remote?.cards?.find((item) => item.sessionId === snap.currentSessionId);
+            if (!viewed || viewed.manualUnread || !runtime.isUnread(viewed)) return;
+            const at = Math.max(Date.now(), viewed.result?.time ?? 0);
+            runtime.markVisited(viewed.sessionId, at);
+          };
+          const onBlur = () => { windowBlurred = true; };
+          const onFocus = () => { windowBlurred = false; markActiveOnReturn(); };
+          if (typeof window.addEventListener === 'function') {
+            window.addEventListener('blur', onBlur);
+            window.addEventListener('focus', onFocus);
+          }
+          if (typeof document.addEventListener === 'function') {
+            document.addEventListener('visibilitychange', markActiveOnReturn);
+          }
+          return () => {
+            if (typeof window.removeEventListener === 'function') {
+              window.removeEventListener('blur', onBlur);
+              window.removeEventListener('focus', onFocus);
+            }
+            if (typeof document.removeEventListener === 'function') {
+              document.removeEventListener('visibilitychange', markActiveOnReturn);
+            }
+          };
+        }, 't3-inbox: mark active visited on window focus');
         ctx.effect(() => {
           connect();
           return () => { active=false; lifetime.abort(); if (retry) clearTimeout(retry); clearTimeout(undoTimer); resetTooltipCoordinator(); };

@@ -107,6 +107,10 @@ export default class T3InboxService extends TypertRemoteService {
     this.stats = { buildCount: 0, lastBuildMs: null, lastListMs: null, lastTreeMs: null, lastMemberMs: null, lastRoots: 0, lastMembers: 0, lastRetired: 0, lastTreeCalls: 0, lastMemberCalls: 0, lastMemberErrors: 0, lastAt: null };
     this.refreshing = null;
     this.refreshAgain = false;
+    this.disposed = false;
+    this.initialEnrolledAt = null;
+    this.pendingCardRefreshes = new Set();
+    this.cardRefreshFlush = null;
     this.prepareLimit = createLimiter(2);
   }
 
@@ -116,6 +120,12 @@ export default class T3InboxService extends TypertRemoteService {
       name: DOMAIN, version: 1, layout: 'per-record', invalidRecords: 'backup-and-skip',
       tables: { records: { valueSchema: recordSchema } },
     });
+    let earliestEnroll = Infinity;
+    for (const [, rec] of this.domain?.table?.('records')?.entries?.() ?? []) {
+      const at = finiteEpochMs(rec?.enrollment?.at);
+      if (at !== null && at < earliestEnroll) earliestEnroll = at;
+    }
+    this.initialEnrolledAt = Number.isFinite(earliestEnroll) ? earliestEnroll : null;
     this.settingsDomain = await ctx.storageDomain.open({
       name:SETTINGS_DOMAIN, version:1, layout:'per-record', invalidRecords:'backup-and-skip',
       // Preserve malformed JSON records so the UI can report damage and offer Reset.
@@ -125,6 +135,12 @@ export default class T3InboxService extends TypertRemoteService {
     ctx.effect(() => () => this.settingsDomain.close(), 't3-inbox: settings domain');
     await this.ensureSnoozeSettings();
     ctx.effect(() => () => this.domain.close(), 't3-inbox: domain');
+    // A hot-reloaded or disabled service must end its follow() streams; otherwise clients keep
+    // waiting on the disposed instance forever and never reconnect to the new one.
+    ctx.effect(() => () => {
+      this.disposed = true;
+      for (const listener of [...(this.followers ?? [])]) listener(null);
+    }, 't3-inbox: end follow streams on dispose');
     ctx.effect(() => () => clearTimeout(this.wakeTimer), 't3-inbox: wake timer');
     ctx.effect(() => ctx.typert.register(TYPERT), 't3-inbox: strict Remote descriptors');
     ctx.effect(() => ctx.cordisInspect.register({
@@ -226,10 +242,11 @@ export default class T3InboxService extends TypertRemoteService {
             ...(event.type !== 'model/selection' && prior?.modelSelection !== undefined ? { modelSelection: prior.modelSelection } : {}),
             progress: this.projection.stateOf(live),
             header: live.header,
+            updatedAt: this.sessionUpdatedAt?.get(session.id) ?? null,
           });
         } catch { this.memberCache.delete(session.id); }
       }
-      this.requestRefresh();
+      this.scheduleCardRefresh(session.id);
     }, { global: true });
     ctx.on('session/created', () => this.requestRefresh(), { global: true });
     ctx.on('session/disposed', () => this.requestRefresh(), { global: true });
@@ -237,8 +254,9 @@ export default class T3InboxService extends TypertRemoteService {
     ctx.on('agent/created', ({ agent }) => { this.ownerEpochs.set(agent.id, randomUUID()); this.requestRefresh(); }, { global: true });
     ctx.on('agent/disposed', ({ agent }) => { this.ownerEpochs.set(agent.id, randomUUID()); this.requestRefresh(); }, { global: true });
     for (const event of ['api-session/added', 'api-session/status', 'api-session/error', 'api-session/removed', 'subagent/start', 'subagent/end']) ctx.on(event, () => this.requestRefresh());
-    await this.refresh();
-    if (this.currentSnapshot.phase === 'unavailable') throw new Error(`Inbox initial baseline failed: ${this.currentSnapshot.error ?? 'unknown error'}`);
+    // Build the initial cold baseline in the background so enabling/reloading the plugin finishes
+    // immediately instead of blocking Cordis/DSH; follow() pushes `phase: 'ready'` once built.
+    void this.refresh();
   }
 
   requireOwner() {
@@ -333,16 +351,19 @@ export default class T3InboxService extends TypertRemoteService {
         await Promise.resolve();
         await Promise.resolve();
         do {
+          if (this.disposed) return;
           this.refreshAgain = false;
           const startEpoch = this.snapshotMutationEpoch ?? 0;
           const next = await this.buildSnapshot();
+          if (this.disposed || !next) return;
           if ((this.snapshotMutationEpoch ?? 0) !== startEpoch) {
             this.refreshAgain = true;
             continue;
           }
           this.publishSnapshot(next);
-        } while (this.refreshAgain);
+        } while (this.refreshAgain && !this.disposed);
       } catch (error) {
+        if (this.disposed) return;
         this.ctx.logger?.warn?.('t3-inbox refresh failed', error);
         this.lastSnapshotSignature = null;
         this.currentSnapshot = { ...this.currentSnapshot, phase: 'unavailable', error: error instanceof Error ? error.message : String(error), revision: (this.currentSnapshot?.revision ?? 0) + 1 };
@@ -354,12 +375,92 @@ export default class T3InboxService extends TypertRemoteService {
 
   refresh() { return this.requestRefresh(); }
 
+  /* Deliver turn/start and turn/end updates for known root sessions via O(1) single-card refresh
+     instead of waiting for a full workspace rebuild, so Done / Working status appears immediately. */
+  scheduleCardRefresh(sessionId) {
+    if (!sessionId || this.disposed) return;
+    if (this.refresh !== T3InboxService.prototype.refresh || this.currentSnapshot?.phase !== 'ready' || !this.rootSummaries?.has(sessionId)) {
+      this.requestRefresh();
+      return;
+    }
+    this.pendingCardRefreshes ??= new Set();
+    this.pendingCardRefreshes.add(sessionId);
+    if (this.cardRefreshFlush) return;
+    this.cardRefreshFlush = (async () => {
+      try {
+        await Promise.resolve();
+        await Promise.resolve();
+        while (this.pendingCardRefreshes.size > 0 && !this.disposed) {
+          const ids = [...this.pendingCardRefreshes];
+          this.pendingCardRefreshes.clear();
+          for (const id of ids) {
+            if (this.disposed) break;
+            try { await this.refreshSessionCard(id); }
+            catch (error) {
+              this.ctx.logger?.warn?.('t3-inbox card refresh failed', error);
+              this.requestRefresh();
+            }
+          }
+        }
+      } finally {
+        this.cardRefreshFlush = null;
+        if (this.pendingCardRefreshes?.size > 0 && !this.disposed) {
+          const nextId = this.pendingCardRefreshes.values().next().value;
+          if (nextId) this.scheduleCardRefresh(nextId);
+        }
+      }
+    })();
+  }
+
+  /* Perf: an unloaded tree cannot change unless one of its session logs changes. Key the cached
+     listDescendants() result by the listing updatedAt of the root and every child; any loaded
+     (live) member, diagnostic, or external subagent bypasses the cache. */
+  treeKey(rootId, summary, descendants) {
+    const at = this.sessionUpdatedAt;
+    if (!at || summary?.updatedAt == null || typeof this.ctx.sessions?.get !== 'function') return null;
+    const ids = [rootId, ...descendants.filter((item) => item.kind === 'child').map((item) => item.id)];
+    if (ids.some((id) => this.ctx.sessions.get(id))) return null;
+    return ids.map((id) => `${id}@${id === rootId ? summary.updatedAt : (at.get(id) ?? 'missing')}`).join('|');
+  }
+
+  cachedDescendants(rootId, summary) {
+    const entry = this.treeCache?.get(rootId);
+    if (!entry) return null;
+    const key = this.treeKey(rootId, summary, entry.descendants);
+    if (key === null || key !== entry.key) { this.treeCache.delete(rootId); return null; }
+    return entry.descendants;
+  }
+
+  rememberDescendants(rootId, summary, descendants) {
+    this.treeCache ??= new Map();
+    if (descendants.some((item) => item.kind === 'diagnostic' || item.mode === 'external')) { this.treeCache.delete(rootId); return; }
+    const key = this.treeKey(rootId, summary, descendants);
+    if (key === null) this.treeCache.delete(rootId);
+    else this.treeCache.set(rootId, { key, descendants });
+  }
+
+  /* Perf: an unloaded, idle session cannot change until it is loaded again (then it is live) or its
+     log changes (updatedAt), so reuse its cold state instead of re-reading it on every rebuild. */
+  async readSessionState(sessionId, live, signal) {
+    this.coldStateCache ??= new Map();
+    const updatedAt = this.sessionUpdatedAt?.get(sessionId);
+    const entry = this.coldStateCache.get(sessionId);
+    if (!live && updatedAt != null && entry?.updatedAt === updatedAt && !this.ctx.sessions?.get?.(sessionId)) return entry.state;
+    const state = await this.ctx.sessionController.state({ sessionId }, signal);
+    const coldIdle = state?.active === false && state.queue === null && !state.running && !(state.pendingInput?.length);
+    if (!live && updatedAt != null && coldIdle && !this.ctx.sessions?.get?.(sessionId)) this.coldStateCache.set(sessionId, { updatedAt, state });
+    else this.coldStateCache.delete(sessionId);
+    return state;
+  }
+
   async readMember(sessionId, label, signal) {
     const live = this.ctx.sessions.get(sessionId);
+    const updatedAt = this.sessionUpdatedAt?.get(sessionId) ?? null;
     let cached = live ? undefined : this.memberCache.get(sessionId);
+    if (cached && updatedAt != null && cached.updatedAt != null && cached.updatedAt !== updatedAt) cached = undefined;
     if (!cached) {
       if (live) {
-        cached = { progress: this.projection.stateOf(live), header: live.header };
+        cached = { progress: this.projection.stateOf(live), header: live.header, updatedAt };
         const prior = this.memberCache.get(sessionId);
         if (prior && prior.modelSelection !== undefined) {
           cached.modelSelection = prior.modelSelection;
@@ -384,12 +485,13 @@ export default class T3InboxService extends TypertRemoteService {
             header: observation.header,
             title: projectionTitle(observation.projections?.values?.title),
             modelSelection: observation.projections?.values?.modelSelection ?? null,
+            updatedAt,
           };
         } finally { observation[Symbol.dispose](); }
       }
       this.memberCache.set(sessionId, cached);
     }
-    const state = await this.ctx.sessionController.state({ sessionId }, signal);
+    const state = await this.readSessionState(sessionId, live, signal);
     const cold = state.active === false && state.queue === null;
     const coldIdle = cold && !state.running && !(state.pendingInput?.length);
     return {
@@ -425,10 +527,19 @@ export default class T3InboxService extends TypertRemoteService {
     const rootId = summary.sessionId;
     let descendants = [];
     let treeError = null;
-    if (timings) timings.treeCalls += 1;
     const treeStart = performance.now();
-    try { descendants = await this.ctx.subagents.listDescendants(rootId); }
-    catch (error) { treeError = error instanceof Error ? error.message : String(error); }
+    try {
+      const cachedTree = this.cachedDescendants(rootId, summary);
+      if (cachedTree) {
+        descendants = cachedTree;
+        if (timings) timings.treeHits = (timings.treeHits ?? 0) + 1;
+      } else {
+        if (timings) timings.treeCalls += 1;
+        descendants = await this.ctx.subagents.listDescendants(rootId);
+        this.rememberDescendants(rootId, summary, descendants);
+      }
+    }
+    catch (error) { treeError = error instanceof Error ? error.message : String(error); this.treeCache?.delete(rootId); }
     finally { if (timings) timings.treeMs += performance.now() - treeStart; }
     const diagnostic = descendants.find((item) => item.kind === 'diagnostic');
     if (diagnostic) treeError = `Subagent tree ${diagnostic.reason}`;
@@ -449,7 +560,16 @@ export default class T3InboxService extends TypertRemoteService {
     const table = this.domain.table('records');
     let metadata = table.get(rootId);
     if (!metadata) {
-      const baseline = resultMap(currentMembers);
+      const allResults = resultMap(currentMembers);
+      const enrollCutoff = this.initialEnrolledAt ?? null;
+      // Only treat results from before initial Inbox enrollment as pre-settled baseline;
+      // newly created sessions that finish their first turn before first scan stay unread/Active.
+      const baseline = enrollCutoff === null
+        ? allResults
+        : Object.fromEntries(Object.entries(allResults).filter(([, pt]) => {
+            const at = finiteEpochMs(pt?.time);
+            return at === null || at <= enrollCutoff;
+          }));
       const now = Date.now();
       metadata = {
         revision: 0, settledThrough: baseline, settledAt: null, settledOverride: null, unsettledAt: null,
@@ -550,13 +670,20 @@ export default class T3InboxService extends TypertRemoteService {
     timings.listMs = performance.now() - listStart;
     const roots = listing.items.filter((item) => item.origin !== 'subagent' && !item.blank);
     this.rootSummaries = new Map(roots.map((item) => [item.sessionId, item]));
+    this.sessionUpdatedAt = new Map(listing.items.map((item) => [item.sessionId, item.updatedAt]));
+    for (const id of [...(this.treeCache?.keys() ?? [])]) if (!this.rootSummaries.has(id)) this.treeCache.delete(id);
+    for (const id of [...(this.coldStateCache?.keys() ?? [])]) if (!this.sessionUpdatedAt.has(id)) this.coldStateCache.delete(id);
     const workspaceBySessionId = new Map();
     for (const workspace of this.ctx.workspaceRegistry.list()) {
       for (const sid of workspace.sessionIds ?? []) workspaceBySessionId.set(sid, workspace);
     }
     const runMember = createLimiter(2);
-    const cards = await mapLimit(roots, 2, (summary) => this.buildCard(summary, runMember, timings, workspaceBySessionId));
+    const cards = (await mapLimit(roots, 2, (summary) => (
+      this.disposed ? null : this.buildCard(summary, runMember, timings, workspaceBySessionId)
+    ))).filter(Boolean);
+    if (this.disposed) return null;
     const now = Date.now();
+    if (this.initialEnrolledAt == null) this.initialEnrolledAt = now;
     this.scheduleWakeTimer(cards, now);
     const receipts = this.computeReceipts(now);
     const result = { ...EMPTY_SNAPSHOT, generation: this.generation, phase: 'ready', cards, receipts, snoozeSettings:this.readSnoozeSettings() };
@@ -565,7 +692,7 @@ export default class T3InboxService extends TypertRemoteService {
       lastBuildMs: performance.now() - buildStart,
       lastListMs: timings.listMs, lastTreeMs: timings.treeMs, lastMemberMs: timings.memberMs,
       lastRoots: cards.length, lastMembers: cards.reduce((total, card) => total + card.members.length, 0),
-      lastRetired: timings.retired, lastTreeCalls: timings.treeCalls, lastMemberCalls: timings.memberCalls,
+      lastRetired: timings.retired, lastTreeCalls: timings.treeCalls, lastTreeHits: timings.treeHits ?? 0, lastMemberCalls: timings.memberCalls,
       lastMemberErrors: timings.memberErrors, lastAt: Date.now(),
     };
     return result;
@@ -575,13 +702,15 @@ export default class T3InboxService extends TypertRemoteService {
     if (this.refresh !== T3InboxService.prototype.refresh) return this.refresh();
     if (this.currentSnapshot?.phase !== 'ready' || !this.rootSummaries?.has(sessionId)) return this.refresh();
     this.refreshGatewayPendingSeeds();
+    this.treeCache?.delete(sessionId);
+    this.coldStateCache?.delete(sessionId);
     const updatedCard = await this.buildCard(this.rootSummaries.get(sessionId), createLimiter(2), null, null);
     if (signal?.aborted) return;
-    const existingCards = this.currentSnapshot?.cards ?? [];
-    const idx = existingCards.findIndex((item) => item.sessionId === sessionId);
+    const latestCards = this.currentSnapshot?.cards ?? [];
+    const idx = latestCards.findIndex((item) => item.sessionId === sessionId);
     if (idx < 0) return this.refresh();
-    if ((existingCards[idx]?.revision ?? 0) > updatedCard.revision) return;
-    const existingCard = existingCards[idx];
+    if ((latestCards[idx]?.revision ?? 0) > updatedCard.revision) return;
+    const existingCard = latestCards[idx];
     const now = Date.now();
     if (
       existingCard?.context
@@ -593,11 +722,15 @@ export default class T3InboxService extends TypertRemoteService {
         updatedCard.context = existingCard.context;
       }
     }
-    const cards = existingCards.slice();
+    const cards = latestCards.slice();
     cards[idx] = updatedCard;
     this.scheduleWakeTimer(cards, now);
     const receipts = this.computeReceipts(now);
+    const prevRev = this.currentSnapshot?.revision ?? 0;
     this.publishSnapshot({ ...this.currentSnapshot, cards, receipts, snoozeSettings: this.readSnoozeSettings() });
+    if ((this.currentSnapshot?.revision ?? 0) !== prevRev) {
+      this.snapshotMutationEpoch = (this.snapshotMutationEpoch ?? 0) + 1;
+    }
   }
 
   async reclassifyCardInSnapshot(sessionId, savedRecord) {
@@ -681,10 +814,13 @@ export default class T3InboxService extends TypertRemoteService {
 
   async snapshot(_request, _signal) {
     this.requireOwner();
-    if (this.refresh !== T3InboxService.prototype.refresh || this.currentSnapshot?.phase !== 'ready') {
+    // Return the current snapshot immediately (including `phase: 'building'` during cold start)
+    // so clients never time out or spam retry errors while the background scan builds; follow()
+    // pushes `phase: 'ready'` as soon as it lands.
+    if (this.refresh !== T3InboxService.prototype.refresh) {
       await this.refresh();
-    } else if (this.refreshing) {
-      await this.refreshing;
+    } else if (this.currentSnapshot?.phase !== 'ready' && !this.disposed) {
+      void this.refresh();
     }
     return clone(this.currentSnapshot);
   }
@@ -734,6 +870,7 @@ export default class T3InboxService extends TypertRemoteService {
 
   async *follow(_request, signal) {
     this.requireOwner();
+    if (this.disposed || signal?.aborted) return;
     let queued = null;
     let wake = null;
     const listener = (snapshot) => { queued = snapshot; wake?.(); };
@@ -741,12 +878,15 @@ export default class T3InboxService extends TypertRemoteService {
     const abort = () => { wake?.(); };
     signal.addEventListener('abort', abort);
     try {
-      if (this.refresh !== T3InboxService.prototype.refresh || this.currentSnapshot?.phase !== 'ready') {
+      if (this.refresh !== T3InboxService.prototype.refresh) {
         await this.refresh();
+      } else if (this.currentSnapshot?.phase !== 'ready' && !this.disposed) {
+        void this.refresh();
       }
+      if (this.disposed || signal?.aborted) return;
       queued = this.currentSnapshot;
       let lastRevision = -1;
-      while (!signal.aborted) {
+      while (!signal.aborted && !this.disposed) {
         if (queued && queued.revision !== lastRevision) {
           const next = queued; queued = null; lastRevision = next.revision;
           yield clone(next);

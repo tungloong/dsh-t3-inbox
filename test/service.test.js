@@ -685,6 +685,7 @@ test('inactive cold sessions get complete idle writeContext without resolveAgent
     },
   });
   await service[Service.init]();
+  await service.refreshing;
   const card = service.currentSnapshot.cards[0];
   assert.equal(card.cold, true);
   assert.equal(card.runtime.completeness, 'complete');
@@ -717,6 +718,7 @@ test('act, snapshot, pin, and saveSnoozeSettings refresh incrementally without f
   const ids = ['a', 'b', 'c', 'd', 'e'];
   const { service, counts, resetCounts } = createIncrementalServiceHarness(ids);
   await service[Service.init]();
+  await service.refreshing;
   const emitted = [];
   service.followers.add((snapshot) => emitted.push(snapshot));
   resetCounts();
@@ -774,6 +776,7 @@ test('slow background buildSnapshot does not clobber a newer act mutation', asyn
     },
   });
   await service[Service.init]();
+  await service.refreshing;
 
   holdSecondMember = true;
   const bgRefresh = service.requestRefresh();
@@ -819,3 +822,105 @@ test('act honors optional request.at for batch settle/restore ordering while kee
   assert.equal(restored.receipt.before.settledAt, explicitSettleAt);
   assert.equal(recordSchema.safeParse(read()).success, true);
 });
+
+test('Service.init builds cold baseline non-blockingly, follow() transitions building->ready, and dispose ends follow() cleanly', async () => {
+  let releaseList;
+  const listGate = new Promise((resolve) => { releaseList = resolve; });
+  const disposers = [];
+  const { service } = createIncrementalServiceHarness(['boot-1']);
+  service.ctx.effect = (fn) => {
+    const dispose = fn();
+    if (typeof dispose === 'function') disposers.push(dispose);
+    return dispose;
+  };
+  const origList = service.ctx.sessionController.list;
+  let firstCall = true;
+  service.ctx.sessionController.list = async () => {
+    if (firstCall) { firstCall = false; await listGate; }
+    return origList();
+  };
+
+  await Promise.race([
+    service[Service.init](),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('Service.init blocked on cold scan')), 300)),
+  ]);
+  assert.equal(service.currentSnapshot.phase, 'building');
+
+  const buildingSnap = await Promise.race([
+    service.snapshot({}),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('snapshot() blocked during cold scan')), 300)),
+  ]);
+  assert.equal(buildingSnap.phase, 'building');
+  assert.deepEqual(buildingSnap.cards, []);
+
+  const ac = new AbortController();
+  const stream = service.follow({}, ac.signal);
+  const firstFrame = await stream.next();
+  assert.equal(firstFrame.done, false);
+  assert.equal(firstFrame.value.phase, 'building');
+
+  const readyPromise = stream.next();
+  releaseList();
+  const secondFrame = await readyPromise;
+  assert.equal(secondFrame.done, false);
+  assert.equal(secondFrame.value.phase, 'ready');
+  assert.equal(secondFrame.value.cards.length, 1);
+
+  // Disposing the service ends parked follow() cleanly so hot-reloaded clients reconnect immediately.
+  const parked = stream.next();
+  for (const dispose of disposers.reverse()) dispose();
+  const ended = await Promise.race([
+    parked,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('follow() hung after dispose')), 500)),
+  ]);
+  assert.equal(ended.done, true);
+  assert.equal(service.disposed, true);
+});
+
+test('cold tree/state caches avoid redundant reads and initialEnrolledAt keeps fast new completions unread', async () => {
+  const { service, counts, records, resetCounts } = createIncrementalServiceHarness(['old-1'], {
+    stateById: {
+      'old-1': { active: false, running: false, queue: null, pendingInput: [] },
+    },
+  });
+  records.clear();
+  await service[Service.init]();
+  await service.refreshing;
+  assert.equal(service.currentSnapshot.cards[0].section, 'settled');
+
+  // Unchanged cold session hits treeCache and coldStateCache on full rebuild.
+  resetCounts();
+  await service.refresh();
+  assert.equal(counts.tree, 0, 'cold treeCache skips redundant listDescendants');
+  assert.equal(counts.member, 0, 'coldStateCache skips redundant state read');
+
+  // Brand-new session completing after initialEnrolledAt stays Active + unread instead of being swallowed into settled.
+  const newerAt = service.initialEnrolledAt + 5000;
+  const origList = service.ctx.sessionController.list;
+  const origObserve = service.ctx.sessionQuery.observeSession;
+  service.ctx.sessionController.list = async () => {
+    const base = await origList();
+    return {
+      items: [
+        ...base.items,
+        { sessionId: 'fast-new', blank: false, updatedAt: newerAt, cwd: '/fast-new', projections: { values: { title: { title: 'fast-new' } } } },
+      ],
+    };
+  };
+  service.ctx.sessionQuery.observeSession = async (id) => {
+    if (id !== 'fast-new') return origObserve(id);
+    let state = initialProgress(0, 'fast-new');
+    state = foldProgress(state, { type: 'turn/start', seq: 1, time: newerAt - 100, data: { turn: 1 } });
+    state = foldProgress(state, { type: 'turn/end', seq: 2, time: newerAt, data: { turn: 1, reason: { kind: 'completed' } } });
+    return {
+      header: { id: 'fast-new', createdAt: newerAt - 100 },
+      projections: { values: { title: { title: 'fast-new' }, t3InboxProgress: state } },
+      [Symbol.dispose]() {},
+    };
+  };
+  await service.refresh();
+  const fastCard = service.currentSnapshot.cards.find((card) => card.sessionId === 'fast-new');
+  assert.equal(fastCard.section, 'active');
+  assert.equal(fastCard.newResult, true);
+});
+
